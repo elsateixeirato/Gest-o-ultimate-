@@ -1,0 +1,2473 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#5B7B6F">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Gestão TO">
+    <meta name="description" content="Aplicação de gestão clínica, agenda, registos e finanças para Terapia Ocupacional.">
+    <link id="dynamic-manifest" rel="manifest" href="">
+    <link id="dynamic-favicon" rel="icon" type="image/svg+xml" href="">
+    <link id="dynamic-apple-icon" rel="apple-touch-icon" href="">
+    <title>Gestão de Terapia Ocupacional</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Plus Jakarta Sans & Lora -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        serif: ['Lora', 'serif'],
+                    },
+                    colors: {
+                        linen: '#FAF8F5',
+                        desk: '#F3EFEA',
+                        card: '#FFFFFF',
+                        sage: {
+                            DEFAULT: '#5B7B6F',
+                            light: '#EBF1EE',
+                            dark: '#456156'
+                        },
+                        terracotta: {
+                            DEFAULT: '#C87D65',
+                            light: '#F9EFEA',
+                            dark: '#A6604A'
+                        },
+                        ochre: {
+                            DEFAULT: '#D4A359',
+                            light: '#FAF3E6'
+                        },
+                        ink: {
+                            DEFAULT: '#2B302E',
+                            muted: '#636B67',
+                            subtle: '#969E9A'
+                        },
+                        warmborder: '#E5DFD6'
+                    },
+                    boxShadow: {
+                        'soft': '0 2px 12px -2px rgba(43, 48, 46, 0.05), 0 1px 3px -1px rgba(43, 48, 46, 0.03)',
+                        'card': '0 4px 16px -4px rgba(43, 48, 46, 0.07)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #F3EFEA;
+            color: #2B302E;
+            background-image: radial-gradient(#DCD5CA 0.75px, transparent 0.75px);
+            background-size: 22px 22px;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D4CDC2;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #B8B0A4;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-sage-light selection:text-sage-dark">
+
+    <!-- Notificações Toast -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Modal de Confirmação -->
+    <div id="confirm-modal" class="fixed inset-0 bg-ink/35 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-linen border border-warmborder rounded-2xl max-w-sm w-full p-6 shadow-card">
+            <h3 class="font-serif text-lg font-semibold text-ink mb-2" id="confirm-title">Confirmar ação</h3>
+            <p class="text-sm text-ink-muted mb-6" id="confirm-message">Tem a certeza de que pretende continuar?</p>
+            <div class="flex justify-end gap-3">
+                <button type="button" id="confirm-cancel" class="px-4 py-2 rounded-xl text-sm font-medium text-ink-muted hover:bg-desk transition-colors">Cancelar</button>
+                <button type="button" id="confirm-ok" class="px-4 py-2 rounded-xl text-sm font-medium bg-terracotta text-white hover:bg-terracotta-dark transition-colors">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CABEÇALHO PRINCIPAL -->
+    <header class="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-3">
+        <div class="bg-linen border border-warmborder rounded-2xl p-4 sm:p-5 shadow-soft flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+
+            <!-- Identidade -->
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-2xl bg-sage text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <i data-lucide="hand-heart" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2.5 flex-wrap">
+                        <h1 class="font-serif text-xl sm:text-2xl font-semibold text-ink tracking-tight">Gestão de Terapia Ocupacional</h1>
+                        <span class="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-sage-light text-sage-dark border border-sage/20">Armazenamento Local Privado</span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-ink-muted mt-0.5">Prática pediátrica, agenda com calendário, fichas, registos, atividades e finanças.</p>
+                </div>
+            </div>
+
+            <!-- Navegação por 5 Separadores -->
+            <nav class="flex flex-wrap items-center gap-1 bg-desk p-1.5 rounded-xl border border-warmborder/80">
+                <button type="button" onclick="switchTab('agenda')" id="tab-btn-agenda" class="tab-btn px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-white text-sage-dark shadow-2xs flex items-center gap-1.5 transition-all">
+                    <i data-lucide="calendar-days" class="w-4 h-4 text-sage"></i>
+                    <span>Agenda</span>
+                    <span id="badge-agenda" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-sage-light text-sage-dark">0</span>
+                </button>
+                <button type="button" onclick="switchTab('utentes')" id="tab-btn-utentes" class="tab-btn px-3 py-2 rounded-lg text-xs sm:text-sm font-medium text-ink-muted hover:text-ink flex items-center gap-1.5 transition-all">
+                    <i data-lucide="users" class="w-4 h-4"></i>
+                    <span>Fichas de Utentes</span>
+                    <span id="badge-utentes" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-white/80 text-ink-muted">0</span>
+                </button>
+                <button type="button" onclick="switchTab('sessoes')" id="tab-btn-sessoes" class="tab-btn px-3 py-2 rounded-lg text-xs sm:text-sm font-medium text-ink-muted hover:text-ink flex items-center gap-1.5 transition-all">
+                    <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+                    <span>Sessões & Registos</span>
+                    <span id="badge-sessoes" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-white/80 text-ink-muted">0</span>
+                </button>
+                <button type="button" onclick="switchTab('atividades')" id="tab-btn-atividades" class="tab-btn px-3 py-2 rounded-lg text-xs sm:text-sm font-medium text-ink-muted hover:text-ink flex items-center gap-1.5 transition-all">
+                    <i data-lucide="puzzle" class="w-4 h-4"></i>
+                    <span>Banco de Atividades</span>
+                    <span id="badge-atividades" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-white/80 text-ink-muted">0</span>
+                </button>
+                <button type="button" onclick="switchTab('financeiro')" id="tab-btn-financeiro" class="tab-btn px-3 py-2 rounded-lg text-xs sm:text-sm font-medium text-ink-muted hover:text-ink flex items-center gap-1.5 transition-all">
+                    <i data-lucide="wallet" class="w-4 h-4"></i>
+                    <span>Controlo Financeiro</span>
+                </button>
+            </nav>
+
+            <!-- Botões de Backup e Importação -->
+            <div class="flex flex-wrap items-center gap-2 self-end lg:self-center">
+                <button type="button" id="btn-install-pwa" onclick="triggerPwaInstall()" class="hidden px-3 py-2 rounded-xl bg-terracotta text-white hover:bg-terracotta-dark transition-colors text-xs font-semibold items-center gap-1.5 shadow-2xs" title="Instalar como aplicação no telemóvel ou computador">
+                    <i data-lucide="smartphone" class="w-4 h-4"></i>
+                    <span>Instalar App</span>
+                </button>
+                <button type="button" onclick="exportBackup()" class="px-3 py-2 rounded-xl border border-warmborder bg-white text-ink hover:border-sage hover:bg-sage-light/40 transition-colors text-xs font-semibold flex items-center gap-1.5 shadow-2xs" title="Descarregar cópia de segurança em JSON">
+                    <i data-lucide="download" class="w-4 h-4 text-sage-dark"></i>
+                    <span>Exportar Backup</span>
+                </button>
+                <label class="px-3 py-2 rounded-xl border border-warmborder bg-white text-ink hover:border-sage hover:bg-sage-light/40 transition-colors text-xs font-semibold flex items-center gap-1.5 shadow-2xs cursor-pointer" title="Importar ficheiro de cópia de segurança JSON">
+                    <i data-lucide="upload" class="w-4 h-4 text-terracotta-dark"></i>
+                    <span>Importar Dados</span>
+                    <input type="file" id="import-file-input" accept=".json" onchange="importBackup(event)" class="hidden">
+                </label>
+            </div>
+        </div>
+
+        <!-- Barra de Navegação Rápida por Utente & Dica de Fluxo -->
+        <div class="mt-2.5 bg-linen/90 border border-warmborder/90 rounded-xl px-4 py-2.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div class="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-sage-dark flex items-center gap-1 shrink-0">
+                    <i data-lucide="search" class="w-3.5 h-3.5"></i> Acesso Rápido:
+                </span>
+                <div class="relative flex-1 min-w-[200px] max-w-sm">
+                    <input type="text" id="quick-client-search" oninput="onQuickClientSearch()" onfocus="onQuickClientSearch()" placeholder="Procurar utente para ver ficha, agenda ou finanças..." class="w-full bg-white border border-warmborder rounded-lg px-3 py-1.5 text-xs text-ink placeholder:text-ink-subtle focus:outline-none focus:border-sage">
+                    <div id="quick-client-results" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-warmborder rounded-xl shadow-card z-40 max-h-60 overflow-y-auto p-1"></div>
+                </div>
+            </div>
+            <div class="flex items-center justify-between sm:justify-end gap-3 text-[11px] text-ink-muted">
+                <span class="hidden md:inline">Fluxo sugerido: <strong>Agenda</strong> → <strong>Registos</strong> (com atividades) → <strong>Finanças</strong></span>
+                <button type="button" onclick="toggleWorkflowGuide()" class="text-sage-dark font-semibold hover:underline flex items-center gap-1 shrink-0">
+                    <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
+                    <span>Guia rápido</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Painel Colapsável de Guia Rápido -->
+        <div id="workflow-guide-panel" class="hidden mt-2 bg-white border border-sage/30 rounded-xl p-4 shadow-soft text-xs text-ink">
+            <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1.5">
+                    <h3 class="font-serif font-semibold text-sm text-ink">Como navegar com mais rapidez</h3>
+                    <p class="text-ink-muted">1. <strong>Agenda:</strong> clique num dia do calendário para filtrar ou marcar sessões, e use <em>Registo</em> para abrir logo a nota clínica correspondente.</p>
+                    <p class="text-ink-muted">2. <strong>Sessões & Registos:</strong> associe uma sessão agendada e adicione uma ou várias atividades do <em>Banco de Atividades</em> antes de guardar.</p>
+                    <p class="text-ink-muted">3. <strong>Controlo Financeiro:</strong> as sessões ligadas a registos não duplicam valores; filtre por utente ou altere o estado <em>Pago / Por pagar</em> em tempo real.</p>
+                    <p class="text-ink-muted">4. <strong>Atalho:</strong> prima <kbd class="px-1.5 py-0.5 bg-desk border border-warmborder rounded text-[10px] font-semibold">Esc</kbd> para fechar janelas de confirmação ou listas rápidas.</p>
+                </div>
+                <button type="button" onclick="toggleWorkflowGuide()" class="text-ink-subtle hover:text-ink p-1" title="Fechar guia">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 pb-12">
+
+        <!-- =================================================================== -->
+        <!-- 1. AGENDA (CALENDÁRIO MENSAL + MARCAÇÃO + LISTA DE SESSÕES)        -->
+        <!-- =================================================================== -->
+        <section id="mod-agenda" class="tab-section grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- Coluna Esquerda (7 cols): Calendário Mensal Interativo -->
+            <div class="lg:col-span-7 bg-linen border border-warmborder rounded-2xl p-5 sm:p-6 shadow-soft">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                    <div>
+                        <h2 id="calendar-month-title" class="font-serif text-xl font-semibold text-ink capitalize">Mês Ano</h2>
+                        <p class="text-xs text-ink-muted">Clique num dia para selecionar a data e ver ou marcar sessões.</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 bg-desk p-1 rounded-xl border border-warmborder self-start sm:self-auto">
+                        <button type="button" onclick="changeCalendarMonth(-1)" class="p-2 rounded-lg bg-white border border-warmborder/70 text-ink hover:border-sage transition-colors" title="Mês anterior">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        </button>
+                        <button type="button" onclick="goToCalendarToday()" class="px-3 py-1.5 rounded-lg bg-white border border-warmborder/70 text-xs font-semibold text-sage-dark hover:border-sage transition-colors">
+                            Hoje
+                        </button>
+                        <button type="button" onclick="changeCalendarMonth(1)" class="p-2 rounded-lg bg-white border border-warmborder/70 text-ink hover:border-sage transition-colors" title="Próximo mês">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cabeçalho dos Dias da Semana (Segunda a Domingo) -->
+                <div class="grid grid-cols-7 gap-1.5 text-center mb-2">
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-ink-muted py-1">Seg</div>
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-ink-muted py-1">Ter</div>
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-ink-muted py-1">Qua</div>
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-ink-muted py-1">Qui</div>
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-ink-muted py-1">Sex</div>
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-ink-subtle py-1">Sáb</div>
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-ink-subtle py-1">Dom</div>
+                </div>
+
+                <!-- Grelha dos Dias -->
+                <div id="calendar-grid" class="grid grid-cols-7 gap-1.5">
+                    <!-- Preenchido via JS -->
+                </div>
+
+                <!-- Legenda Simples -->
+                <div class="mt-4 pt-3 border-t border-warmborder flex flex-wrap items-center justify-between gap-2 text-xs text-ink-muted">
+                    <div class="flex items-center gap-4">
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sage inline-block"></span> Dia com sessão</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-terracotta inline-block"></span> Dia selecionado</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="calendar-selected-label" class="font-semibold text-ink">Data selecionada: --</span>
+                        <button type="button" onclick="askClearAllData()" class="text-[11px] font-semibold text-terracotta-dark hover:underline">Limpar tudo</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Direita (5 cols): Formulário de Marcação/Edição + Lista -->
+            <div class="lg:col-span-5 flex flex-col gap-6">
+
+                <!-- Cartão de Nova Marcação / Edição de Sessão -->
+                <div class="bg-linen border border-warmborder rounded-2xl p-5 shadow-soft">
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 id="appt-form-title" class="font-serif text-lg font-semibold text-ink">Marcar Nova Sessão</h2>
+                        <button type="button" id="appt-cancel-edit-btn" onclick="resetAppointmentForm()" class="hidden text-xs font-medium text-terracotta-dark hover:underline">
+                            Cancelar edição
+                        </button>
+                    </div>
+
+                    <form id="appointment-form" class="space-y-3.5">
+                        <input type="hidden" id="appt-edit-id">
+                        <div>
+                            <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Utente</label>
+                            <select id="appt-client" required class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                                <!-- Preenchido via JS -->
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Data</label>
+                                <input type="date" id="appt-date" required onchange="onApptDateChange(this.value)" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Hora</label>
+                                <input type="time" id="appt-time" value="15:00" required class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Contexto</label>
+                                <select id="appt-context" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                                    <option value="Consultório / Clínica">Consultório / Clínica</option>
+                                    <option value="Contexto Escolar">Contexto Escolar</option>
+                                    <option value="Domicílio">Domicílio</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Valor da Sessão (€)</label>
+                                <input type="number" id="appt-price" value="45" min="0" step="0.5" required class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink font-medium focus:outline-none focus:border-sage">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2.5 items-center pt-0.5">
+                            <div>
+                                <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Estado</label>
+                                <select id="appt-status" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                                    <option value="Agendada">Agendada</option>
+                                    <option value="Realizada">Realizada</option>
+                                    <option value="Falta">Falta</option>
+                                </select>
+                            </div>
+                            <label class="flex items-center gap-2 bg-white border border-warmborder rounded-xl px-3 py-2.5 mt-5 cursor-pointer select-none">
+                                <input type="checkbox" id="appt-paid" class="w-4 h-4 accent-sage rounded">
+                                <span class="text-xs font-semibold text-ink">Sessão Paga</span>
+                            </label>
+                        </div>
+
+                        <button type="submit" id="appt-submit-btn" class="w-full py-2.5 rounded-xl bg-sage text-white hover:bg-sage-dark font-semibold text-sm transition-colors shadow-xs">
+                            Guardar Sessão na Agenda
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Lista de Sessões (Filtrável pelo dia selecionado ou todas) -->
+                <div class="bg-linen border border-warmborder rounded-2xl p-5 shadow-soft">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <div>
+                            <h3 id="agenda-list-heading" class="font-serif text-base font-semibold text-ink">Sessões do Dia Selecionado</h3>
+                            <span id="agenda-count" class="text-xs text-ink-muted">0 sessões</span>
+                        </div>
+                        <button type="button" onclick="toggleShowAllAppointments()" id="btn-toggle-all-appts" class="px-2.5 py-1.5 rounded-lg bg-white border border-warmborder text-xs font-medium text-ink hover:border-sage transition-colors">
+                            Ver todas as sessões
+                        </button>
+                    </div>
+                    <div id="agenda-list" class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                        <!-- Preenchido via JS -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- 2. FICHAS DE UTENTES                                                -->
+        <!-- =================================================================== -->
+        <section id="mod-utentes" class="tab-section hidden grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div class="lg:col-span-4 bg-linen border border-warmborder rounded-2xl p-5 shadow-soft">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 id="client-form-title" class="font-serif text-lg font-semibold text-ink">Nova Ficha de Utente</h2>
+                    <button type="button" onclick="resetClientForm()" id="client-cancel-btn" class="hidden text-xs font-medium text-terracotta-dark hover:underline">Cancelar</button>
+                </div>
+                <form id="client-form" class="space-y-3.5">
+                    <input type="hidden" id="client-edit-id">
+                    <div>
+                        <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Nome / Iniciais ou Código</label>
+                        <input type="text" id="client-name" required placeholder="Ex: M. S. (6 anos)" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Idade</label>
+                            <input type="number" id="client-age" min="0" max="120" placeholder="6" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Valor Padrão (€)</label>
+                            <input type="number" id="client-default-price" value="45" min="0" step="0.5" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Contacto Responsável / Escola</label>
+                        <input type="text" id="client-contact" placeholder="Ex: Mãe — 912 345 678" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Objetivos Terapêuticos Gerais</label>
+                        <textarea id="client-goals" rows="3" placeholder="Ex: Motricidade fina, preensão, integração sensorial, autonomia nas AVDs..." class="w-full bg-white border border-warmborder rounded-xl p-3 text-sm text-ink focus:outline-none focus:border-sage resize-y"></textarea>
+                    </div>
+                    <button type="submit" id="client-submit-btn" class="w-full py-2.5 rounded-xl bg-sage text-white hover:bg-sage-dark font-semibold text-sm transition-colors shadow-xs">
+                        Guardar Ficha de Utente
+                    </button>
+                </form>
+            </div>
+
+            <div class="lg:col-span-8 bg-linen border border-warmborder rounded-2xl p-5 sm:p-6 shadow-soft">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-serif text-lg font-semibold text-ink">Dossier de Utentes</h2>
+                    <span id="clients-count" class="text-xs font-medium bg-desk px-2.5 py-1 rounded-full text-ink-muted">0 utentes</span>
+                </div>
+                <div id="clients-list" class="space-y-3 max-h-[560px] overflow-y-auto pr-1">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- 3. SESSÕES & REGISTOS                                               -->
+        <!-- =================================================================== -->
+        <section id="mod-sessoes" class="tab-section hidden grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div class="lg:col-span-5 bg-linen border border-warmborder rounded-2xl p-5 shadow-soft">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 id="sn-form-title" class="font-serif text-lg font-semibold text-ink">Novo Registo de Sessão</h2>
+                    <button type="button" onclick="resetNoteForm()" id="sn-cancel-btn" class="hidden text-xs font-medium text-terracotta-dark hover:underline">Cancelar edição</button>
+                </div>
+                <form id="session-note-form" class="space-y-3.5">
+                    <input type="hidden" id="sn-edit-id">
+
+                    <!-- Ligação opcional a sessão agendada na Agenda / Calendário -->
+                    <div class="bg-white/80 border border-warmborder rounded-xl p-3">
+                        <label for="sn-scheduled-session" class="block text-[11px] font-bold uppercase tracking-wider text-sage-dark mb-1">Associar Sessão Agendada (Calendário / Agenda)</label>
+                        <select id="sn-scheduled-session" onchange="onScheduledSessionSelectChange(this.value)" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-xs font-medium text-ink focus:outline-none focus:border-sage">
+                            <option value="">-- Selecionar marcação agendada (opcional) --</option>
+                        </select>
+                        <p id="sn-linked-appt-info" class="hidden text-[11px] text-ink-muted mt-1.5"></p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Utente</label>
+                        <select id="sn-client" required class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage"></select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Data da Sessão</label>
+                            <input type="date" id="sn-date" required class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Valor Associado (€)</label>
+                            <input type="number" id="sn-price" value="45" min="0" step="0.5" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Atividades Realizadas</label>
+                        <input type="text" id="sn-activities" placeholder="Ex: Circuito proprioceptivo + pinças de madeira" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                        <div class="mt-2 flex items-center gap-1.5">
+                            <select id="sn-bank-activity-picker" class="flex-1 bg-white border border-warmborder rounded-xl px-2.5 py-1.5 text-xs text-ink focus:outline-none focus:border-sage">
+                                <option value="">+ Adicionar atividade do Banco de Atividades...</option>
+                            </select>
+                            <button type="button" onclick="addSelectedBankActivityToNote()" class="px-2.5 py-1.5 rounded-xl bg-sage-light hover:bg-sage text-sage-dark hover:text-white text-xs font-semibold transition-colors shrink-0">
+                                Adicionar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Banner de Atividades Ligadas do Banco (Múltiplas) -->
+                    <div id="sn-linked-activity-box" class="hidden bg-sage-light/70 border border-sage/30 rounded-xl p-3">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-sage-dark">Atividades Ligadas do Banco</span>
+                            <button type="button" onclick="clearLinkedActivity()" class="text-[11px] font-semibold text-terracotta-dark hover:underline">Limpar todas</button>
+                        </div>
+                        <div id="sn-linked-activities-list" class="flex flex-wrap gap-1.5">
+                            <!-- Etiquetas das atividades ligadas via JS -->
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Registo Clínico / Evolução / Notas</label>
+                        <textarea id="sn-content" rows="5" required placeholder="Descreva a regulação, desempenho ocupacional, conquistas e próximos passos..." class="w-full bg-white border border-warmborder rounded-xl p-3 text-sm text-ink focus:outline-none focus:border-sage resize-y"></textarea>
+                    </div>
+                    <label class="flex items-center gap-2 bg-white border border-warmborder rounded-xl px-3 py-2.5 cursor-pointer select-none">
+                        <input type="checkbox" id="sn-paid" class="w-4 h-4 accent-sage rounded">
+                        <span class="text-xs font-semibold text-ink">Marcar esta sessão como paga (reflete no Controlo Financeiro)</span>
+                    </label>
+                    <label class="flex items-center gap-2 bg-white/80 border border-warmborder rounded-xl px-3 py-2.5 cursor-pointer select-none">
+                        <input type="checkbox" id="sn-mark-realized" checked class="w-4 h-4 accent-sage rounded">
+                        <span class="text-xs font-medium text-ink">Marcar sessão agendada associada como "Realizada"</span>
+                    </label>
+                    <button type="submit" id="sn-submit-btn" class="w-full py-2.5 rounded-xl bg-sage text-white hover:bg-sage-dark font-semibold text-sm transition-colors shadow-xs">
+                        Guardar Registo de Sessão
+                    </button>
+                </form>
+            </div>
+
+            <div class="lg:col-span-7 flex flex-col gap-6">
+                <!-- Sessões Agendadas na Agenda / Calendário Disponíveis para Registo -->
+                <div class="bg-linen border border-warmborder rounded-2xl p-5 shadow-soft">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div>
+                            <h3 class="font-serif text-base font-semibold text-ink">Sessões Agendadas (Agenda & Calendário)</h3>
+                            <p class="text-xs text-ink-muted">Abra uma marcação para iniciar ou editar o respetivo registo clínico.</p>
+                        </div>
+                        <span id="scheduled-sessions-count" class="text-xs font-medium bg-desk px-2.5 py-1 rounded-full text-ink-muted">0 marcadas</span>
+                    </div>
+                    <div id="scheduled-sessions-list" class="space-y-2 max-h-[240px] overflow-y-auto pr-1">
+                        <!-- Preenchido via JS -->
+                    </div>
+                </div>
+
+                <!-- Histórico de Sessões & Registos -->
+                <div class="bg-linen border border-warmborder rounded-2xl p-5 sm:p-6 shadow-soft">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-serif text-lg font-semibold text-ink">Histórico de Sessões & Registos</h2>
+                        <span id="notes-count" class="text-xs font-medium bg-desk px-2.5 py-1 rounded-full text-ink-muted">0 registos</span>
+                    </div>
+                    <div id="notes-list" class="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+                        <!-- Preenchido via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- 4. BANCO DE ATIVIDADES                                              -->
+        <!-- =================================================================== -->
+        <section id="mod-atividades" class="tab-section hidden grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div class="lg:col-span-4 bg-linen border border-warmborder rounded-2xl p-5 shadow-soft">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 id="act-form-title" class="font-serif text-lg font-semibold text-ink">Nova Atividade</h2>
+                    <button type="button" onclick="resetActivityForm()" id="act-cancel-btn" class="hidden text-xs font-medium text-terracotta-dark hover:underline">Cancelar edição</button>
+                </div>
+                <form id="activity-form" class="space-y-3.5">
+                    <input type="hidden" id="act-edit-id">
+                    <div>
+                        <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Nome da Atividade</label>
+                        <input type="text" id="act-name" required placeholder="Ex: Pesca de Pompons com Pinça" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Área Terapêutica</label>
+                        <select id="act-category" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                            <option value="Motricidade Fina">Motricidade Fina & Grafomotricidade</option>
+                            <option value="Integração Sensorial">Integração Sensorial</option>
+                            <option value="Planeamento Motor">Planeamento Motor / Práxis</option>
+                            <option value="Autorregulação">Autorregulação Emocional</option>
+                            <option value="Funções Executivas">Funções Executivas & Atenção</option>
+                            <option value="AVDs">AVDs / Autonomia</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Materiais Necessários</label>
+                        <input type="text" id="act-materials" placeholder="Ex: pompons, pinças, plasticina" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Descrição e Adaptações</label>
+                        <textarea id="act-desc" rows="3" placeholder="Como aplicar e adaptar a atividade..." class="w-full bg-white border border-warmborder rounded-xl p-3 text-sm text-ink focus:outline-none focus:border-sage resize-y"></textarea>
+                    </div>
+                    <button type="submit" id="act-submit-btn" class="w-full py-2.5 rounded-xl bg-sage text-white hover:bg-sage-dark font-semibold text-sm transition-colors shadow-xs">
+                        Guardar no Banco de Atividades
+                    </button>
+                </form>
+            </div>
+
+            <div class="lg:col-span-8 bg-linen border border-warmborder rounded-2xl p-5 sm:p-6 shadow-soft">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <h2 class="font-serif text-lg font-semibold text-ink">Banco de Atividades</h2>
+                    <input type="text" id="act-search" oninput="renderActivities()" placeholder="Pesquisar por nome, área ou material..." class="bg-white border border-warmborder rounded-xl px-3 py-2 text-xs text-ink focus:outline-none focus:border-sage sm:w-64">
+                </div>
+                <div id="activities-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[560px] overflow-y-auto pr-1">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- 5. CONTROLO FINANCEIRO (INTERLIGADO ÀS SESSÕES E VALORES)           -->
+        <!-- =================================================================== -->
+        <section id="mod-financeiro" class="tab-section hidden grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- Coluna Esquerda (4 cols): Indicadores Financeiros -->
+            <div class="lg:col-span-4 flex flex-col gap-4 bg-linen border border-warmborder rounded-2xl p-5 shadow-soft">
+                <h2 class="font-serif text-lg font-semibold text-ink">Resumo Financeiro</h2>
+
+                <div class="bg-sage-light/70 border border-sage/25 rounded-2xl p-4">
+                    <span class="text-xs font-bold uppercase tracking-wider text-sage-dark block mb-1">Total Recebido (Sessões Pagas)</span>
+                    <div id="fin-paid-total" class="font-serif text-2xl sm:text-3xl font-bold text-sage-dark">0,00 €</div>
+                    <p id="fin-paid-count" class="text-xs text-ink-muted mt-1">0 sessões pagas</p>
+                </div>
+
+                <div class="bg-terracotta-light/70 border border-terracotta/25 rounded-2xl p-4">
+                    <span class="text-xs font-bold uppercase tracking-wider text-terracotta-dark block mb-1">Por Receber (Sessões Realizadas/Agendadas)</span>
+                    <div id="fin-pending-total" class="font-serif text-2xl font-bold text-terracotta-dark">0,00 €</div>
+                    <p id="fin-pending-count" class="text-xs text-ink-muted mt-1">0 sessões pendentes</p>
+                </div>
+
+                <div class="bg-white border border-warmborder rounded-2xl p-4">
+                    <span class="text-xs font-bold uppercase tracking-wider text-ink-muted block mb-1">Total Geral Previsto / Registado</span>
+                    <div id="fin-all-total" class="font-serif text-xl font-bold text-ink">0,00 €</div>
+                    <p class="text-xs text-ink-muted mt-1">Atualizado automaticamente a partir das sessões.</p>
+                </div>
+            </div>
+
+            <!-- Coluna Direita (8 cols): Movimentos de Sessões com Edição Direta -->
+            <div class="lg:col-span-8 bg-linen border border-warmborder rounded-2xl p-5 sm:p-6 shadow-soft">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <div>
+                        <h2 class="font-serif text-lg font-semibold text-ink">Sessões & Valores Financeiros</h2>
+                        <p class="text-xs text-ink-muted">Altere o pagamento com um clique ou edite o valor e estado diretamente.</p>
+                    </div>
+                    <select id="fin-filter" onchange="renderFinance()" class="bg-white border border-warmborder rounded-xl px-3 py-1.5 text-xs font-medium text-ink focus:outline-none focus:border-sage">
+                        <option value="all">Todas as sessões</option>
+                        <option value="paid">Apenas Pagas</option>
+                        <option value="unpaid">Por Pagar</option>
+                    </select>
+                </div>
+
+                <!-- Barra de Pesquisa e Seleção de Utente no Controlo Financeiro -->
+                <div class="bg-white/80 border border-warmborder rounded-xl p-3.5 mb-4 space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
+                        <div class="sm:col-span-5">
+                            <label for="fin-client-select" class="block text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1">Filtrar por Utente</label>
+                            <select id="fin-client-select" onchange="onFinClientSelectChange()" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-xs font-medium text-ink focus:outline-none focus:border-sage">
+                                <option value="">Todos os utentes</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-5">
+                            <label for="fin-client-search" class="block text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1">Procurar por Nome</label>
+                            <input type="text" id="fin-client-search" oninput="onFinClientSearchInput()" placeholder="Ex: M. S., T. R..." class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-xs text-ink focus:outline-none focus:border-sage">
+                        </div>
+                        <div class="sm:col-span-2 sm:pt-5">
+                            <button type="button" onclick="clearFinanceClientFilter()" class="w-full px-2.5 py-2 rounded-xl bg-desk hover:bg-sage-light text-ink hover:text-sage-dark border border-warmborder text-xs font-semibold transition-colors">
+                                Limpar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Resumo Específico do Utente Selecionado / Filtrado -->
+                    <div id="fin-client-summary" class="hidden pt-2.5 border-t border-warmborder/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <span id="fin-client-summary-label" class="font-semibold text-ink">Resumo do utente</span>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <span id="fin-client-sessions" class="px-2.5 py-1 rounded-lg bg-desk text-ink font-medium">0 sessões</span>
+                            <span id="fin-client-paid" class="px-2.5 py-1 rounded-lg bg-sage-light text-sage-dark font-semibold">Pago: 0,00 €</span>
+                            <span id="fin-client-pending" class="px-2.5 py-1 rounded-lg bg-terracotta-light text-terracotta-dark font-semibold">Por pagar: 0,00 €</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="fin-list" class="space-y-2.5 max-h-[540px] overflow-y-auto pr-1">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // =========================================================================
+        // SUPORTE PWA (ÍCONE, MANIFESTO DINÂMICO, INSTALAÇÃO E MODO OFFLINE)
+        // =========================================================================
+        let deferredInstallPrompt = null;
+
+        function initPwaSupport() {
+            try {
+                const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#5B7B6F"/><circle cx="256" cy="256" r="176" fill="#FAF8F5" fill-opacity="0.14"/><path d="M256 368c-4.5 0-8.8-1.7-12.1-4.8-38.7-35.8-95.9-88.7-95.9-143.2 0-36.5 28.6-64 64-64 20.5 0 39.7 9.6 51.9 25.3 12.2-15.7 31.4-25.3 51.9-25.3 35.4 0 64 27.5 64 64 0 54.5-57.2 107.4-95.9 143.2-3.3 3.1-7.6 4.8-12.1 4.8z" fill="#FAF8F5"/></svg>`;
+                const iconDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSvg);
+
+                const faviconEl = document.getElementById('dynamic-favicon');
+                const appleIconEl = document.getElementById('dynamic-apple-icon');
+                if (faviconEl) faviconEl.href = iconDataUrl;
+                if (appleIconEl) appleIconEl.href = iconDataUrl;
+
+                const isHttp = window.location.protocol === 'http:' || window.location.protocol === 'https:';
+                if (isHttp) {
+                    const manifestObj = {
+                        name: 'Gestão de Terapia Ocupacional',
+                        short_name: 'Gestão TO',
+                        description: 'Agenda, fichas de utentes, registos clínicos, atividades e finanças em Terapia Ocupacional.',
+                        start_url: window.location.href,
+                        scope: './',
+                        display: 'standalone',
+                        orientation: 'any',
+                        background_color: '#F3EFEA',
+                        theme_color: '#5B7B6F',
+                        icons: [
+                            {
+                                src: iconDataUrl,
+                                sizes: '192x192 512x512',
+                                type: 'image/svg+xml',
+                                purpose: 'any maskable'
+                            }
+                        ]
+                    };
+
+                    const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+                    const manifestUrl = URL.createObjectURL(manifestBlob);
+                    const manifestEl = document.getElementById('dynamic-manifest');
+                    if (manifestEl) manifestEl.href = manifestUrl;
+
+                    if ('serviceWorker' in navigator) {
+                        const swCode = `
+                            const CACHE_NAME = 'gestao-to-pwa-v1';
+                            self.addEventListener('install', (event) => {
+                                self.skipWaiting();
+                            });
+                            self.addEventListener('activate', (event) => {
+                                event.waitUntil(self.clients.claim());
+                            });
+                            self.addEventListener('fetch', (event) => {
+                                if (event.request.method !== 'GET') return;
+                                event.respondWith(
+                                    caches.open(CACHE_NAME).then((cache) => {
+                                        return fetch(event.request)
+                                            .then((networkResponse) => {
+                                                if (networkResponse && networkResponse.status === 200) {
+                                                    cache.put(event.request, networkResponse.clone());
+                                                }
+                                                return networkResponse;
+                                            })
+                                            .catch(() => cache.match(event.request));
+                                    })
+                                );
+                            });
+                        `;
+                        const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                        const swUrl = URL.createObjectURL(swBlob);
+                        navigator.serviceWorker.register(swUrl).catch(() => {});
+                    }
+                }
+            } catch (e) {
+                console.warn('Configuração PWA opcional ignorada:', e);
+            }
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            const installBtn = document.getElementById('btn-install-pwa');
+            if (installBtn) {
+                installBtn.classList.remove('hidden');
+                installBtn.classList.add('flex');
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredInstallPrompt = null;
+            const installBtn = document.getElementById('btn-install-pwa');
+            if (installBtn) {
+                installBtn.classList.add('hidden');
+                installBtn.classList.remove('flex');
+            }
+            showToast('Aplicação instalada com sucesso no dispositivo!');
+        });
+
+        async function triggerPwaInstall() {
+            if (!deferredInstallPrompt) {
+                showToast('No menu do Chrome (⋮), toque em "Instalar aplicação" ou "Adicionar ao ecrã principal".');
+                return;
+            }
+            deferredInstallPrompt.prompt();
+            const choiceResult = await deferredInstallPrompt.userChoice;
+            if (choiceResult && choiceResult.outcome === 'accepted') {
+                showToast('A instalar aplicação...');
+            }
+            deferredInstallPrompt = null;
+        }
+
+        // =========================================================================
+        // ESTADO GLOBAL & PERSISTÊNCIA LOCAL (LOCALSTORAGE)
+        // =========================================================================
+        const STORAGE_KEY = 'gestao_to_pediatrica_v2';
+
+        function getTodayIso() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        const emptyData = {
+            clients: [],
+            appointments: [],
+            notes: [],
+            activities: []
+        };
+
+        let appData = loadData();
+        let selectedCalendarDate = getTodayIso();
+        let calendarViewDate = new Date();
+        let showAllAppointmentsInList = false;
+        let linkedActivityIds = [];
+
+        function refreshIcons() {
+            try {
+                if (typeof lucide !== 'undefined' && lucide && typeof lucide.createIcons === 'function') {
+                    lucide.createIcons();
+                }
+            } catch (e) {
+                console.warn('Ícones Lucide indisponíveis:', e);
+            }
+        }
+
+        function loadData() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    return {
+                        clients: Array.isArray(parsed.clients) ? parsed.clients : [],
+                        appointments: Array.isArray(parsed.appointments) ? parsed.appointments : [],
+                        notes: Array.isArray(parsed.notes) ? parsed.notes : [],
+                        activities: Array.isArray(parsed.activities) ? parsed.activities : []
+                    };
+                }
+            } catch (e) {
+                console.error('Erro ao ler dados do localStorage:', e);
+            }
+            return JSON.parse(JSON.stringify(emptyData));
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+            } catch (e) {
+                console.error('Erro ao guardar dados no localStorage:', e);
+                showToast('Não foi possível guardar no navegador.');
+            }
+        }
+
+        // =========================================================================
+        // ARRANQUE DA APLICAÇÃO
+        // =========================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                initPwaSupport();
+                const today = getTodayIso();
+                document.getElementById('appt-date').value = selectedCalendarDate || today;
+                document.getElementById('sn-date').value = today;
+
+                setupForms();
+                renderAll();
+                if (appData.clients.length > 0) {
+                    applyClientDefaultPrice(appData.clients[0].id, 'appt-price');
+                    applyClientDefaultPrice(appData.clients[0].id, 'sn-price');
+                }
+                refreshIcons();
+            } catch (err) {
+                console.error('Erro ao iniciar aplicação:', err);
+            }
+        });
+
+        function renderAll() {
+            renderNavBadges();
+            renderClientSelects();
+            renderFinanceClientSelect();
+            renderBankActivityPicker();
+            renderScheduledSessionOptions();
+            renderCalendar();
+            renderAppointments();
+            renderClients();
+            renderScheduledSessionsList();
+            renderNotes();
+            renderActivities();
+            renderFinance();
+        }
+
+        function renderNavBadges() {
+            const bAgenda = document.getElementById('badge-agenda');
+            const bUtentes = document.getElementById('badge-utentes');
+            const bSessoes = document.getElementById('badge-sessoes');
+            const bAtividades = document.getElementById('badge-atividades');
+
+            if (bAgenda) bAgenda.textContent = String(appData.appointments.length);
+            if (bUtentes) bUtentes.textContent = String(appData.clients.length);
+            if (bSessoes) bSessoes.textContent = String(appData.notes.length);
+            if (bAtividades) bAtividades.textContent = String(appData.activities.length);
+        }
+
+        function toggleWorkflowGuide() {
+            const panel = document.getElementById('workflow-guide-panel');
+            if (!panel) return;
+            panel.classList.toggle('hidden');
+            refreshIcons();
+        }
+
+        function onQuickClientSearch() {
+            const input = document.getElementById('quick-client-search');
+            const resultsBox = document.getElementById('quick-client-results');
+            if (!input || !resultsBox) return;
+
+            const query = input.value.trim().toLowerCase();
+            const matches = appData.clients.filter(c =>
+                c.name.toLowerCase().includes(query) ||
+                (c.contact || '').toLowerCase().includes(query) ||
+                (c.goals || '').toLowerCase().includes(query)
+            );
+
+            if (matches.length === 0) {
+                resultsBox.innerHTML = `<p class="text-xs text-ink-muted px-3 py-2">${query ? 'Nenhum utente encontrado.' : 'Sem utentes registados.'}</p>`;
+                resultsBox.classList.remove('hidden');
+                return;
+            }
+
+            resultsBox.innerHTML = matches.map(c => `
+                <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg hover:bg-linen transition-colors">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-ink truncate">${escapeHtml(c.name)}</p>
+                        <p class="text-[11px] text-ink-muted truncate">${c.age ? escapeHtml(String(c.age)) + ' anos • ' : ''}${formatEuro(c.defaultPrice)}</p>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button type="button" onclick="quickGoToClient('${escapeHtml(c.id)}', 'utentes')" class="px-2 py-1 rounded-md bg-desk hover:bg-sage-light text-[11px] font-semibold text-ink hover:text-sage-dark">Ficha</button>
+                        <button type="button" onclick="quickGoToClient('${escapeHtml(c.id)}', 'agenda')" class="px-2 py-1 rounded-md bg-desk hover:bg-sage-light text-[11px] font-semibold text-ink hover:text-sage-dark">Agenda</button>
+                        <button type="button" onclick="quickGoToClient('${escapeHtml(c.id)}', 'financeiro')" class="px-2 py-1 rounded-md bg-sage-light hover:bg-sage text-[11px] font-semibold text-sage-dark hover:text-white">Finanças</button>
+                    </div>
+                </div>
+            `).join('');
+
+            resultsBox.classList.remove('hidden');
+        }
+
+        function quickGoToClient(clientId, targetTab) {
+            const resultsBox = document.getElementById('quick-client-results');
+            const searchInput = document.getElementById('quick-client-search');
+            const client = appData.clients.find(c => c.id === clientId);
+            if (resultsBox) resultsBox.classList.add('hidden');
+            if (searchInput && client) searchInput.value = client.name;
+
+            if (targetTab === 'utentes') {
+                editClient(clientId);
+            } else if (targetTab === 'agenda') {
+                const apptSelect = document.getElementById('appt-client');
+                if (apptSelect) {
+                    apptSelect.value = clientId;
+                    if (!document.getElementById('appt-edit-id').value) {
+                        applyClientDefaultPrice(clientId, 'appt-price');
+                    }
+                }
+                showAllAppointmentsInList = true;
+                switchTab('agenda');
+            } else if (targetTab === 'financeiro') {
+                switchTab('financeiro');
+                const finSelect = document.getElementById('fin-client-select');
+                const finSearch = document.getElementById('fin-client-search');
+                if (finSearch) finSearch.value = '';
+                if (finSelect) finSelect.value = clientId;
+                renderFinance();
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            const quickBox = document.getElementById('quick-client-results');
+            const quickInput = document.getElementById('quick-client-search');
+            if (quickBox && !quickBox.classList.contains('hidden')) {
+                const clickedInside = (quickInput && quickInput.contains(e.target)) || quickBox.contains(e.target);
+                if (!clickedInside) {
+                    quickBox.classList.add('hidden');
+                }
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const quickBox = document.getElementById('quick-client-results');
+                if (quickBox) quickBox.classList.add('hidden');
+                const modal = document.getElementById('confirm-modal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    document.getElementById('confirm-cancel')?.click();
+                }
+            }
+        });
+
+        // =========================================================================
+        // NAVEGAÇÃO ENTRE OS 5 SEPARADORES
+        // =========================================================================
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-section').forEach(sec => {
+                sec.classList.add('hidden');
+                sec.classList.remove('grid');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-sage-dark', 'font-semibold', 'shadow-2xs');
+                btn.classList.add('text-ink-muted', 'font-medium');
+            });
+
+            const target = document.getElementById(`mod-${tabName}`);
+            if (target) {
+                target.classList.remove('hidden');
+                target.classList.add('grid');
+            }
+
+            const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-white', 'text-sage-dark', 'font-semibold', 'shadow-2xs');
+                activeBtn.classList.remove('text-ink-muted', 'font-medium');
+            }
+
+            if (tabName === 'sessoes') {
+                renderScheduledSessionOptions();
+                renderScheduledSessionsList();
+                renderBankActivityPicker();
+                renderLinkedActivitiesBox();
+            } else if (tabName === 'financeiro') {
+                renderFinanceClientSelect();
+                renderFinance();
+            } else if (tabName === 'agenda') {
+                renderCalendar();
+                renderAppointments();
+            }
+
+            refreshIcons();
+        }
+
+        // =========================================================================
+        // SELECTORES DE UTENTES & PREÇO PADRÃO
+        // =========================================================================
+        function renderClientSelects() {
+            const apptSelect = document.getElementById('appt-client');
+            const snSelect = document.getElementById('sn-client');
+
+            if (appData.clients.length === 0) {
+                const emptyOpt = '<option value="">Sem utentes — crie uma ficha primeiro</option>';
+                apptSelect.innerHTML = emptyOpt;
+                snSelect.innerHTML = emptyOpt;
+                return;
+            }
+
+            const prevApptVal = apptSelect.value;
+            const prevSnVal = snSelect.value;
+
+            const optionsHtml = appData.clients
+                .map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`)
+                .join('');
+
+            apptSelect.innerHTML = optionsHtml;
+            snSelect.innerHTML = optionsHtml;
+
+            if (prevApptVal && appData.clients.some(c => c.id === prevApptVal)) {
+                apptSelect.value = prevApptVal;
+            }
+            if (prevSnVal && appData.clients.some(c => c.id === prevSnVal)) {
+                snSelect.value = prevSnVal;
+            }
+        }
+
+        function renderFinanceClientSelect() {
+            const finSelect = document.getElementById('fin-client-select');
+            if (!finSelect) return;
+
+            const prevVal = finSelect.value;
+            const opts = ['<option value="">Todos os utentes</option>'];
+            appData.clients.forEach(c => {
+                opts.push(`<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`);
+            });
+            finSelect.innerHTML = opts.join('');
+
+            if (prevVal && appData.clients.some(c => c.id === prevVal)) {
+                finSelect.value = prevVal;
+            } else {
+                finSelect.value = '';
+            }
+        }
+
+        function onFinClientSelectChange() {
+            const selectEl = document.getElementById('fin-client-select');
+            const searchEl = document.getElementById('fin-client-search');
+            if (selectEl && selectEl.value && searchEl) {
+                const chosen = appData.clients.find(c => c.id === selectEl.value);
+                if (chosen && searchEl.value.trim()) {
+                    const q = searchEl.value.trim().toLowerCase();
+                    if (!chosen.name.toLowerCase().includes(q)) {
+                        searchEl.value = '';
+                    }
+                }
+            }
+            renderFinance();
+        }
+
+        function onFinClientSearchInput() {
+            const searchEl = document.getElementById('fin-client-search');
+            const selectEl = document.getElementById('fin-client-select');
+            const q = (searchEl?.value || '').trim().toLowerCase();
+
+            if (selectEl && selectEl.value) {
+                const chosen = appData.clients.find(c => c.id === selectEl.value);
+                if (chosen && q && !chosen.name.toLowerCase().includes(q)) {
+                    selectEl.value = '';
+                }
+            }
+            renderFinance();
+        }
+
+        function clearFinanceClientFilter() {
+            const selectEl = document.getElementById('fin-client-select');
+            const searchEl = document.getElementById('fin-client-search');
+            if (selectEl) selectEl.value = '';
+            if (searchEl) searchEl.value = '';
+            renderFinance();
+        }
+
+        function applyClientDefaultPrice(clientId, priceInputId) {
+            const priceInput = document.getElementById(priceInputId);
+            if (!priceInput) return;
+            const client = appData.clients.find(c => c.id === clientId);
+            if (client && client.defaultPrice !== undefined && client.defaultPrice !== null) {
+                priceInput.value = client.defaultPrice;
+            }
+        }
+
+        // =========================================================================
+        // 1. AGENDA & CALENDÁRIO MENSAL INTERATIVO
+        // =========================================================================
+        function changeCalendarMonth(delta) {
+            calendarViewDate = new Date(
+                calendarViewDate.getFullYear(),
+                calendarViewDate.getMonth() + delta,
+                1
+            );
+            renderCalendar();
+        }
+
+        function goToCalendarToday() {
+            const now = new Date();
+            calendarViewDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            selectedCalendarDate = getTodayIso();
+            document.getElementById('appt-date').value = selectedCalendarDate;
+            renderCalendar();
+            renderAppointments();
+        }
+
+        function selectCalendarDay(isoDate) {
+            selectedCalendarDate = isoDate;
+            document.getElementById('appt-date').value = isoDate;
+            showAllAppointmentsInList = false;
+            renderCalendar();
+            renderAppointments();
+        }
+
+        function onApptDateChange(isoDate) {
+            if (!isoDate) return;
+            selectedCalendarDate = isoDate;
+            const parts = isoDate.split('-');
+            if (parts.length === 3) {
+                calendarViewDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
+            }
+            renderCalendar();
+            renderAppointments();
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            const titleEl = document.getElementById('calendar-month-title');
+            const selectedLabel = document.getElementById('calendar-selected-label');
+
+            const year = calendarViewDate.getFullYear();
+            const month = calendarViewDate.getMonth();
+
+            const monthFormatter = new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric' });
+            titleEl.textContent = monthFormatter.format(new Date(year, month, 1));
+            selectedLabel.textContent = `Data selecionada: ${formatDatePt(selectedCalendarDate)}`;
+
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            const leadingBlanks = (firstDayOfMonth + 6) % 7;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const todayIso = getTodayIso();
+
+            const sessionCountByDate = {};
+            appData.appointments.forEach(a => {
+                if (a.date) {
+                    sessionCountByDate[a.date] = (sessionCountByDate[a.date] || 0) + 1;
+                }
+            });
+
+            let html = '';
+
+            for (let b = 0; b < leadingBlanks; b++) {
+                html += `<div class="h-16 sm:h-20 rounded-xl bg-desk/40 border border-transparent"></div>`;
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const mm = String(month + 1).padStart(2, '0');
+                const dd = String(day).padStart(2, '0');
+                const iso = `${year}-${mm}-${dd}`;
+                const count = sessionCountByDate[iso] || 0;
+                const isSelected = iso === selectedCalendarDate;
+                const isToday = iso === todayIso;
+
+                let cellClasses = 'bg-white border-warmborder text-ink hover:border-sage';
+                if (isSelected) {
+                    cellClasses = 'bg-terracotta text-white border-terracotta shadow-2xs';
+                } else if (isToday) {
+                    cellClasses = 'bg-sage-light/70 border-sage text-ink font-semibold';
+                }
+
+                html += `
+                    <button type="button" onclick="selectCalendarDay('${iso}')" class="h-16 sm:h-20 rounded-xl border p-1.5 sm:p-2 flex flex-col justify-between text-left transition-all cursor-pointer ${cellClasses}">
+                        <div class="flex items-center justify-between w-full">
+                            <span class="text-xs sm:text-sm font-semibold">${day}</span>
+                            ${isToday && !isSelected ? '<span class="text-[10px] font-bold text-sage-dark">Hoje</span>' : ''}
+                        </div>
+                        ${count > 0 ? `
+                            <span class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold px-1.5 py-0.5 rounded-md truncate ${isSelected ? 'bg-white/25 text-white' : 'bg-sage-light text-sage-dark'}">
+                                <span class="w-1.5 h-1.5 rounded-full shrink-0 ${isSelected ? 'bg-white' : 'bg-sage'}"></span>
+                                <span>${count} ${count === 1 ? 'sessão' : 'sessões'}</span>
+                            </span>
+                        ` : `<span class="text-[10px] opacity-0 sm:opacity-40 select-none">—</span>`}
+                    </button>
+                `;
+            }
+
+            grid.innerHTML = html;
+        }
+
+        function toggleShowAllAppointments() {
+            showAllAppointmentsInList = !showAllAppointmentsInList;
+            renderAppointments();
+        }
+
+        function renderAppointments() {
+            const list = document.getElementById('agenda-list');
+            const heading = document.getElementById('agenda-list-heading');
+            const countEl = document.getElementById('agenda-count');
+            const toggleBtn = document.getElementById('btn-toggle-all-appts');
+
+            if (showAllAppointmentsInList) {
+                heading.textContent = 'Todas as Sessões Agendadas';
+                toggleBtn.textContent = 'Filtrar pelo dia selecionado';
+            } else {
+                heading.textContent = `Sessões em ${formatDatePt(selectedCalendarDate)}`;
+                toggleBtn.textContent = 'Ver todas as sessões';
+            }
+
+            const filtered = showAllAppointmentsInList
+                ? [...appData.appointments]
+                : appData.appointments.filter(a => a.date === selectedCalendarDate);
+
+            filtered.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+            countEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'sessão' : 'sessões'}`;
+
+            if (filtered.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-7 px-4 bg-white/70 border border-dashed border-warmborder rounded-xl">
+                        <p class="text-xs text-ink-muted">Nenhuma sessão marcada ${showAllAppointmentsInList ? 'na agenda' : 'para este dia'}.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = filtered.map(a => {
+                const client = appData.clients.find(c => c.id === a.clientId);
+                const clientName = client ? client.name : 'Utente não associado';
+                const linkedNote = appData.notes.find(n => n.appointmentId === a.id);
+                return `
+                    <div class="bg-white border border-warmborder rounded-xl p-3.5 shadow-2xs flex flex-col gap-2.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                    <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-sage-light text-sage-dark">${escapeHtml(a.time || '')}</span>
+                                    ${showAllAppointmentsInList ? `<span class="text-xs text-ink-muted">${escapeHtml(formatDatePt(a.date))}</span>` : ''}
+                                    <span class="text-[11px] px-2 py-0.5 rounded-md bg-desk text-ink-muted">${escapeHtml(a.context || '')}</span>
+                                    ${linkedNote ? `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-ochre-light text-[#8A611E]">Com registo</span>` : ''}
+                                </div>
+                                <h4 class="font-serif font-semibold text-ink text-sm sm:text-base">${escapeHtml(clientName)}</h4>
+                                <div class="flex flex-wrap items-center gap-2 mt-1 text-xs">
+                                    <span class="font-semibold text-ink">${formatEuro(a.price)}</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold ${a.paid ? 'bg-sage-light text-sage-dark' : 'bg-terracotta-light text-terracotta-dark'}">
+                                        ${a.paid ? 'Paga' : 'Por pagar'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-1 shrink-0">
+                                <button type="button" onclick="openSessionRecordFromAppointment('${a.id}')" class="px-2.5 py-1.5 rounded-lg bg-sage-light hover:bg-sage text-sage-dark hover:text-white text-xs font-semibold flex items-center gap-1 transition-colors" title="Abrir ou criar registo de sessão">
+                                    <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                                    <span>Registo</span>
+                                </button>
+                                <button type="button" onclick="editAppointment('${a.id}')" class="px-2.5 py-1.5 rounded-lg bg-desk hover:bg-sage-light text-ink hover:text-sage-dark text-xs font-semibold flex items-center gap-1 transition-colors" title="Editar sessão">
+                                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                    <span>Editar</span>
+                                </button>
+                                <button type="button" onclick="deleteAppointment('${a.id}')" class="p-1.5 rounded-lg text-ink-subtle hover:text-terracotta-dark transition-colors" title="Remover sessão">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-warmborder/70 flex flex-wrap items-center justify-between gap-2">
+                            <select onchange="updateAppointmentStatus('${a.id}', this.value)" class="text-xs bg-desk border border-warmborder rounded-lg px-2.5 py-1 font-medium text-ink focus:outline-none">
+                                <option value="Agendada" ${a.status === 'Agendada' ? 'selected' : ''}>Estado: Agendada</option>
+                                <option value="Realizada" ${a.status === 'Realizada' ? 'selected' : ''}>Estado: Realizada</option>
+                                <option value="Falta" ${a.status === 'Falta' ? 'selected' : ''}>Estado: Falta</option>
+                            </select>
+
+                            <label class="flex items-center gap-1.5 text-xs font-semibold cursor-pointer select-none ${a.paid ? 'text-sage-dark' : 'text-terracotta-dark'}">
+                                <input type="checkbox" ${a.paid ? 'checked' : ''} onchange="toggleAppointmentPaid('${a.id}')" class="w-4 h-4 accent-sage rounded">
+                                <span>${a.paid ? 'Paga' : 'Marcar como paga'}</span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            refreshIcons();
+        }
+
+        function editAppointment(id) {
+            const appt = appData.appointments.find(a => a.id === id);
+            if (!appt) return;
+
+            document.getElementById('appt-edit-id').value = appt.id;
+            if (appt.clientId && appData.clients.some(c => c.id === appt.clientId)) {
+                document.getElementById('appt-client').value = appt.clientId;
+            }
+            document.getElementById('appt-date').value = appt.date;
+            document.getElementById('appt-time').value = appt.time || '15:00';
+            document.getElementById('appt-context').value = appt.context || 'Consultório / Clínica';
+            document.getElementById('appt-price').value = appt.price ?? 0;
+            document.getElementById('appt-status').value = appt.status || 'Agendada';
+            document.getElementById('appt-paid').checked = Boolean(appt.paid);
+
+            document.getElementById('appt-form-title').textContent = 'Editar Sessão';
+            document.getElementById('appt-submit-btn').textContent = 'Guardar Alterações da Sessão';
+            document.getElementById('appt-cancel-edit-btn').classList.remove('hidden');
+
+            selectedCalendarDate = appt.date;
+            onApptDateChange(appt.date);
+            switchTab('agenda');
+        }
+
+        function resetAppointmentForm() {
+            document.getElementById('appt-edit-id').value = '';
+            document.getElementById('appt-date').value = selectedCalendarDate || getTodayIso();
+            document.getElementById('appt-time').value = '15:00';
+            document.getElementById('appt-context').value = 'Consultório / Clínica';
+            document.getElementById('appt-status').value = 'Agendada';
+            document.getElementById('appt-paid').checked = false;
+            applyClientDefaultPrice(document.getElementById('appt-client').value, 'appt-price');
+
+            document.getElementById('appt-form-title').textContent = 'Marcar Nova Sessão';
+            document.getElementById('appt-submit-btn').textContent = 'Guardar Sessão na Agenda';
+            document.getElementById('appt-cancel-edit-btn').classList.add('hidden');
+        }
+
+        function updateAppointmentStatus(id, status) {
+            const appt = appData.appointments.find(a => a.id === id);
+            if (!appt) return;
+            appt.status = status;
+            saveData();
+            renderCalendar();
+            renderAppointments();
+            renderScheduledSessionOptions();
+            renderScheduledSessionsList();
+            renderFinance();
+            showToast('Estado da sessão atualizado');
+        }
+
+        function toggleAppointmentPaid(id) {
+            const appt = appData.appointments.find(a => a.id === id);
+            if (!appt) return;
+            appt.paid = !appt.paid;
+
+            appData.notes.forEach(n => {
+                if (n.appointmentId === id) {
+                    n.paid = appt.paid;
+                }
+            });
+
+            saveData();
+            renderAppointments();
+            renderNotes();
+            renderFinance();
+            showToast(appt.paid ? 'Sessão marcada como paga e refletida nas finanças' : 'Pagamento marcado como pendente');
+        }
+
+        function deleteAppointment(id) {
+            showConfirmModal(
+                'Eliminar sessão da agenda?',
+                'Esta sessão será removida da agenda e desassociada de eventuais registos.',
+                () => {
+                    appData.appointments = appData.appointments.filter(a => a.id !== id);
+                    appData.notes.forEach(n => {
+                        if (n.appointmentId === id) {
+                            n.appointmentId = null;
+                        }
+                    });
+                    if (document.getElementById('appt-edit-id').value === id) {
+                        resetAppointmentForm();
+                    }
+                    saveData();
+                    renderAll();
+                    refreshIcons();
+                    showToast('Sessão eliminada');
+                }
+            );
+        }
+
+        // =========================================================================
+        // 2. FICHAS DE UTENTES
+        // =========================================================================
+        function renderClients() {
+            const list = document.getElementById('clients-list');
+            document.getElementById('clients-count').textContent = `${appData.clients.length} ${appData.clients.length === 1 ? 'utente' : 'utentes'}`;
+
+            if (appData.clients.length === 0) {
+                list.innerHTML = `<p class="text-xs text-ink-muted text-center py-8 bg-white/70 rounded-xl border border-dashed border-warmborder">Ainda não existem fichas de utentes. Utilize o formulário ao lado para criar a primeira.</p>`;
+                return;
+            }
+
+            list.innerHTML = appData.clients.map(c => `
+                <div class="bg-white border border-warmborder rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div class="space-y-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h3 class="font-serif font-semibold text-ink text-base">${escapeHtml(c.name)}</h3>
+                            ${c.age ? `<span class="text-xs bg-desk px-2 py-0.5 rounded-full text-ink-muted">${escapeHtml(String(c.age))} anos</span>` : ''}
+                            <span class="text-xs bg-sage-light px-2 py-0.5 rounded-full text-sage-dark font-semibold">Sessão: ${formatEuro(c.defaultPrice)}</span>
+                        </div>
+                        ${c.contact ? `<p class="text-xs text-ink-muted"><strong>Contacto:</strong> ${escapeHtml(c.contact)}</p>` : ''}
+                        <p class="text-xs text-ink leading-relaxed pt-0.5"><strong>Objetivos terapêuticos:</strong> ${escapeHtml(c.goals || 'Por definir')}</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-start">
+                        <button type="button" onclick="editClient('${c.id}')" class="px-2.5 py-1.5 rounded-lg bg-desk hover:bg-sage-light text-ink hover:text-sage-dark text-xs font-semibold flex items-center gap-1 transition-colors" title="Editar ficha">
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                            <span>Editar</span>
+                        </button>
+                        <button type="button" onclick="deleteClient('${c.id}')" class="p-1.5 rounded-lg text-ink-subtle hover:text-terracotta-dark transition-colors" title="Apagar ficha">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            refreshIcons();
+        }
+
+        function editClient(id) {
+            const c = appData.clients.find(x => x.id === id);
+            if (!c) return;
+
+            document.getElementById('client-edit-id').value = c.id;
+            document.getElementById('client-name').value = c.name;
+            document.getElementById('client-age').value = c.age || '';
+            document.getElementById('client-default-price').value = c.defaultPrice ?? 45;
+            document.getElementById('client-contact').value = c.contact || '';
+            document.getElementById('client-goals').value = c.goals || '';
+
+            document.getElementById('client-form-title').textContent = 'Editar Ficha de Utente';
+            document.getElementById('client-submit-btn').textContent = 'Guardar Alterações';
+            document.getElementById('client-cancel-btn').classList.remove('hidden');
+
+            switchTab('utentes');
+        }
+
+        function resetClientForm() {
+            document.getElementById('client-edit-id').value = '';
+            document.getElementById('client-form').reset();
+            document.getElementById('client-default-price').value = 45;
+            document.getElementById('client-form-title').textContent = 'Nova Ficha de Utente';
+            document.getElementById('client-submit-btn').textContent = 'Guardar Ficha de Utente';
+            document.getElementById('client-cancel-btn').classList.add('hidden');
+        }
+
+        function deleteClient(id) {
+            showConfirmModal(
+                'Eliminar ficha de utente?',
+                'A ficha será removida da lista local.',
+                () => {
+                    appData.clients = appData.clients.filter(c => c.id !== id);
+                    if (document.getElementById('client-edit-id').value === id) {
+                        resetClientForm();
+                    }
+                    const finSelect = document.getElementById('fin-client-select');
+                    if (finSelect && finSelect.value === id) {
+                        finSelect.value = '';
+                    }
+                    saveData();
+                    renderAll();
+                    refreshIcons();
+                    showToast('Ficha de utente removida');
+                }
+            );
+        }
+
+        // =========================================================================
+        // 3. SESSÕES & REGISTOS + LIGAÇÃO COM AGENDA & BANCO DE ATIVIDADES
+        // =========================================================================
+        function renderBankActivityPicker() {
+            const picker = document.getElementById('sn-bank-activity-picker');
+            if (!picker) return;
+
+            if (appData.activities.length === 0) {
+                picker.innerHTML = '<option value="">Sem atividades no banco</option>';
+                return;
+            }
+
+            const opts = ['<option value="">+ Adicionar atividade do Banco de Atividades...</option>'];
+            appData.activities.forEach(act => {
+                opts.push(`<option value="${escapeHtml(act.id)}">${escapeHtml(act.name)} (${escapeHtml(act.category)})</option>`);
+            });
+            picker.innerHTML = opts.join('');
+        }
+
+        function addSelectedBankActivityToNote() {
+            const picker = document.getElementById('sn-bank-activity-picker');
+            if (!picker || !picker.value) return;
+            const actId = picker.value;
+            picker.value = '';
+            appendActivityToSessionForm(actId, false);
+        }
+
+        function renderLinkedActivitiesBox() {
+            const box = document.getElementById('sn-linked-activity-box');
+            const listEl = document.getElementById('sn-linked-activities-list');
+            if (!box || !listEl) return;
+
+            const validActivities = linkedActivityIds
+                .map(id => appData.activities.find(a => a.id === id))
+                .filter(Boolean);
+
+            linkedActivityIds = validActivities.map(a => a.id);
+
+            if (validActivities.length === 0) {
+                box.classList.add('hidden');
+                listEl.innerHTML = '';
+                return;
+            }
+
+            listEl.innerHTML = validActivities.map(act => `
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-sage/30 text-xs text-ink shadow-2xs" title="${escapeHtml(act.category)}${act.materials ? ' • Materiais: ' + escapeHtml(act.materials) : ''}">
+                    <span class="font-semibold text-sage-dark">${escapeHtml(act.name)}</span>
+                    <button type="button" onclick="removeLinkedActivity('${escapeHtml(act.id)}')" class="text-ink-subtle hover:text-terracotta-dark font-bold leading-none ml-0.5" title="Remover esta atividade">&times;</button>
+                </span>
+            `).join('');
+
+            box.classList.remove('hidden');
+        }
+
+        function setLinkedActivities(activityIds) {
+            const ids = Array.isArray(activityIds) ? activityIds : (activityIds ? [activityIds] : []);
+            linkedActivityIds = [...new Set(ids)];
+            renderLinkedActivitiesBox();
+        }
+
+        function addLinkedActivity(activityId) {
+            if (!activityId) return;
+            if (!linkedActivityIds.includes(activityId)) {
+                linkedActivityIds.push(activityId);
+            }
+            renderLinkedActivitiesBox();
+        }
+
+        function removeLinkedActivity(activityId) {
+            linkedActivityIds = linkedActivityIds.filter(id => id !== activityId);
+            renderLinkedActivitiesBox();
+        }
+
+        function clearLinkedActivity() {
+            linkedActivityIds = [];
+            renderLinkedActivitiesBox();
+        }
+
+        function appendActivityToSessionForm(activityId, shouldSwitchTab = false) {
+            const act = appData.activities.find(a => a.id === activityId);
+            if (!act) {
+                showToast('Atividade não encontrada.');
+                return;
+            }
+
+            if (shouldSwitchTab) {
+                switchTab('sessoes');
+            }
+
+            const alreadyAdded = linkedActivityIds.includes(act.id);
+            addLinkedActivity(act.id);
+
+            const actInput = document.getElementById('sn-activities');
+            const summaryPart = act.materials
+                ? `${act.name} (${act.materials})`
+                : act.name;
+
+            if (!actInput.value.trim()) {
+                actInput.value = summaryPart;
+            } else if (!actInput.value.includes(act.name)) {
+                actInput.value = `${actInput.value.trim()} + ${summaryPart}`;
+            }
+
+            actInput.focus();
+            showToast(
+                alreadyAdded
+                    ? `A atividade "${act.name}" já estava associada a este registo.`
+                    : `Atividade "${act.name}" adicionada ao registo (${linkedActivityIds.length} no total).`
+            );
+        }
+
+        function sendActivityToSessionRecord(activityId) {
+            appendActivityToSessionForm(activityId, true);
+        }
+
+        function renderScheduledSessionOptions() {
+            const select = document.getElementById('sn-scheduled-session');
+            if (!select) return;
+
+            const currentVal = select.value;
+            const sortedAppts = [...appData.appointments].sort((a, b) =>
+                (b.date + (b.time || '')).localeCompare(a.date + (a.time || ''))
+            );
+
+            const opts = ['<option value="">-- Selecionar marcação agendada (opcional) --</option>'];
+            sortedAppts.forEach(a => {
+                const client = appData.clients.find(c => c.id === a.clientId);
+                const clientName = client ? client.name : 'Utente';
+                const hasNote = appData.notes.some(n => n.appointmentId === a.id);
+                opts.push(
+                    `<option value="${escapeHtml(a.id)}">${escapeHtml(formatDatePt(a.date))} ${escapeHtml(a.time || '')} — ${escapeHtml(clientName)} (${escapeHtml(a.status)})${hasNote ? ' [Com registo]' : ''}</option>`
+                );
+            });
+
+            select.innerHTML = opts.join('');
+            if (currentVal && appData.appointments.some(a => a.id === currentVal)) {
+                select.value = currentVal;
+            }
+        }
+
+        function updateLinkedAppointmentBanner(apptId) {
+            const infoEl = document.getElementById('sn-linked-appt-info');
+            if (!infoEl) return;
+            if (!apptId) {
+                infoEl.classList.add('hidden');
+                infoEl.textContent = '';
+                return;
+            }
+            const appt = appData.appointments.find(a => a.id === apptId);
+            if (!appt) {
+                infoEl.classList.add('hidden');
+                return;
+            }
+            const client = appData.clients.find(c => c.id === appt.clientId);
+            infoEl.textContent = `Sessão ligada: ${client ? client.name : 'Utente'} • ${formatDatePt(appt.date)} às ${appt.time || '--:--'} • ${appt.context || ''} • ${formatEuro(appt.price)} (${appt.paid ? 'Paga' : 'Por pagar'})`;
+            infoEl.classList.remove('hidden');
+        }
+
+        function onScheduledSessionSelectChange(apptId) {
+            updateLinkedAppointmentBanner(apptId);
+            if (!apptId) return;
+
+            const appt = appData.appointments.find(a => a.id === apptId);
+            if (!appt) return;
+
+            const existingNote = appData.notes.find(n => n.appointmentId === appt.id);
+            if (existingNote) {
+                editNote(existingNote.id);
+                showToast('Carregado o registo existente desta sessão agendada.');
+                return;
+            }
+
+            document.getElementById('sn-edit-id').value = '';
+            document.getElementById('sn-form-title').textContent = 'Novo Registo de Sessão';
+            document.getElementById('sn-submit-btn').textContent = 'Guardar Registo de Sessão';
+            document.getElementById('sn-cancel-btn').classList.add('hidden');
+
+            if (appt.clientId && appData.clients.some(c => c.id === appt.clientId)) {
+                document.getElementById('sn-client').value = appt.clientId;
+            }
+            document.getElementById('sn-date').value = appt.date || getTodayIso();
+            document.getElementById('sn-price').value = appt.price ?? 0;
+            document.getElementById('sn-paid').checked = Boolean(appt.paid);
+            document.getElementById('sn-mark-realized').checked = appt.status !== 'Realizada';
+            document.getElementById('sn-activities').value = '';
+            document.getElementById('sn-content').value = '';
+            clearLinkedActivity();
+        }
+
+        function openSessionRecordFromAppointment(apptId) {
+            const appt = appData.appointments.find(a => a.id === apptId);
+            if (!appt) return;
+
+            switchTab('sessoes');
+            const select = document.getElementById('sn-scheduled-session');
+            if (select) {
+                select.value = appt.id;
+            }
+            onScheduledSessionSelectChange(appt.id);
+            document.getElementById('sn-content').focus();
+        }
+
+        function renderScheduledSessionsList() {
+            const list = document.getElementById('scheduled-sessions-list');
+            const countEl = document.getElementById('scheduled-sessions-count');
+            if (!list || !countEl) return;
+
+            const sorted = [...appData.appointments].sort((a, b) =>
+                (b.date + (b.time || '')).localeCompare(a.date + (a.time || ''))
+            );
+
+            countEl.textContent = `${sorted.length} ${sorted.length === 1 ? 'marcada' : 'marcadas'}`;
+
+            if (sorted.length === 0) {
+                list.innerHTML = `<p class="text-xs text-ink-muted text-center py-4 bg-white/70 rounded-xl border border-dashed border-warmborder">Nenhuma sessão agendada na Agenda ou Calendário.</p>`;
+                return;
+            }
+
+            list.innerHTML = sorted.map(a => {
+                const client = appData.clients.find(c => c.id === a.clientId);
+                const clientName = client ? client.name : 'Utente';
+                const hasNote = appData.notes.some(n => n.appointmentId === a.id);
+
+                return `
+                    <div class="bg-white border border-warmborder rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="text-xs font-bold text-sage-dark">${escapeHtml(formatDatePt(a.date))}</span>
+                                <span class="text-xs font-semibold text-ink">${escapeHtml(a.time || '')}</span>
+                                <span class="text-xs font-serif font-semibold text-ink">${escapeHtml(clientName)}</span>
+                                <span class="text-[11px] px-2 py-0.5 rounded-md bg-desk text-ink-muted">${escapeHtml(a.status)}</span>
+                                ${hasNote ? `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-sage-light text-sage-dark">Registo criado</span>` : `<span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-ochre-light text-[#8A611E]">Sem registo</span>`}
+                            </div>
+                        </div>
+                        <button type="button" onclick="openSessionRecordFromAppointment('${a.id}')" class="px-3 py-1.5 rounded-lg ${hasNote ? 'bg-desk text-ink hover:bg-sage-light hover:text-sage-dark' : 'bg-sage text-white hover:bg-sage-dark'} text-xs font-semibold transition-colors shrink-0">
+                            ${hasNote ? 'Ver / Editar Registo' : 'Registar Sessão'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderNotes() {
+            const list = document.getElementById('notes-list');
+            document.getElementById('notes-count').textContent = `${appData.notes.length} ${appData.notes.length === 1 ? 'registo' : 'registos'}`;
+
+            if (appData.notes.length === 0) {
+                list.innerHTML = `<p class="text-xs text-ink-muted text-center py-8 bg-white/70 rounded-xl border border-dashed border-warmborder">Nenhum registo de sessão guardado ainda.</p>`;
+                return;
+            }
+
+            const sorted = [...appData.notes].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+            list.innerHTML = sorted.map(n => {
+                const client = appData.clients.find(c => c.id === n.clientId);
+                const clientName = client ? client.name : 'Utente';
+                const hasPrice = typeof n.price === 'number' && n.price > 0;
+                const noteActIds = Array.isArray(n.activityIds)
+                    ? n.activityIds
+                    : (n.activityId ? [n.activityId] : []);
+                const linkedActs = noteActIds
+                    .map(id => appData.activities.find(a => a.id === id))
+                    .filter(Boolean);
+                const linkedAppt = n.appointmentId ? appData.appointments.find(a => a.id === n.appointmentId) : null;
+
+                return `
+                    <div class="bg-white border border-warmborder rounded-xl p-4 shadow-2xs space-y-2.5">
+                        <div class="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 class="font-serif font-semibold text-ink text-sm sm:text-base">${escapeHtml(clientName)}</h3>
+                                    <span class="text-xs text-ink-muted">${escapeHtml(formatDatePt(n.date))}</span>
+                                    ${linkedAppt ? `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-desk text-ink border border-warmborder/80">Agenda: ${escapeHtml(linkedAppt.time || '')} • ${escapeHtml(linkedAppt.status)}</span>` : ''}
+                                    ${hasPrice ? `<span class="text-xs font-semibold px-2 py-0.5 rounded-full ${n.paid ? 'bg-sage-light text-sage-dark' : 'bg-ochre-light text-[#8A611E]'}">${formatEuro(n.price)} • ${n.paid ? 'Pago' : 'Por pagar'}</span>` : ''}
+                                </div>
+                                ${n.activities ? `<p class="text-xs text-sage-dark font-medium mt-1">Atividades: ${escapeHtml(n.activities)}</p>` : ''}
+                                ${linkedActs.length > 0 ? `
+                                    <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                        ${linkedActs.map(act => `<span class="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md bg-sage-light text-sage-dark">Banco: ${escapeHtml(act.name)}</span>`).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <div class="flex items-center gap-1 shrink-0">
+                                <button type="button" onclick="editNote('${n.id}')" class="px-2.5 py-1.5 rounded-lg bg-desk hover:bg-sage-light text-ink hover:text-sage-dark text-xs font-semibold flex items-center gap-1 transition-colors" title="Editar registo">
+                                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                    <span>Editar</span>
+                                </button>
+                                <button type="button" onclick="deleteNote('${n.id}')" class="p-1.5 rounded-lg text-ink-subtle hover:text-terracotta-dark transition-colors" title="Apagar registo">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-ink leading-relaxed whitespace-pre-line bg-linen/80 p-3 rounded-xl border border-warmborder/60">${escapeHtml(n.content)}</p>
+                    </div>
+                `;
+            }).join('');
+
+            refreshIcons();
+        }
+
+        function editNote(id) {
+            const n = appData.notes.find(x => x.id === id);
+            if (!n) return;
+
+            document.getElementById('sn-edit-id').value = n.id;
+            const schedSelect = document.getElementById('sn-scheduled-session');
+            if (schedSelect) {
+                schedSelect.value = n.appointmentId || '';
+            }
+            updateLinkedAppointmentBanner(n.appointmentId || '');
+
+            if (n.clientId && appData.clients.some(c => c.id === n.clientId)) {
+                document.getElementById('sn-client').value = n.clientId;
+            }
+            document.getElementById('sn-date').value = n.date || getTodayIso();
+            document.getElementById('sn-price').value = n.price ?? 45;
+            document.getElementById('sn-activities').value = n.activities || '';
+            document.getElementById('sn-content').value = n.content || '';
+            document.getElementById('sn-paid').checked = Boolean(n.paid);
+            document.getElementById('sn-mark-realized').checked = false;
+
+            const existingIds = Array.isArray(n.activityIds)
+                ? n.activityIds
+                : (n.activityId ? [n.activityId] : []);
+            setLinkedActivities(existingIds);
+
+            document.getElementById('sn-form-title').textContent = 'Editar Registo de Sessão';
+            document.getElementById('sn-submit-btn').textContent = 'Guardar Alterações do Registo';
+            document.getElementById('sn-cancel-btn').classList.remove('hidden');
+
+            switchTab('sessoes');
+        }
+
+        function resetNoteForm() {
+            document.getElementById('sn-edit-id').value = '';
+            const schedSelect = document.getElementById('sn-scheduled-session');
+            if (schedSelect) {
+                schedSelect.value = '';
+            }
+            updateLinkedAppointmentBanner('');
+            document.getElementById('sn-date').value = getTodayIso();
+            document.getElementById('sn-activities').value = '';
+            document.getElementById('sn-content').value = '';
+            document.getElementById('sn-paid').checked = false;
+            document.getElementById('sn-mark-realized').checked = true;
+            clearLinkedActivity();
+            applyClientDefaultPrice(document.getElementById('sn-client').value, 'sn-price');
+
+            document.getElementById('sn-form-title').textContent = 'Novo Registo de Sessão';
+            document.getElementById('sn-submit-btn').textContent = 'Guardar Registo de Sessão';
+            document.getElementById('sn-cancel-btn').classList.add('hidden');
+        }
+
+        function deleteNote(id) {
+            showConfirmModal(
+                'Apagar registo de sessão?',
+                'Esta nota clínica será removida.',
+                () => {
+                    appData.notes = appData.notes.filter(n => n.id !== id);
+                    if (document.getElementById('sn-edit-id').value === id) {
+                        resetNoteForm();
+                    }
+                    saveData();
+                    renderAll();
+                    refreshIcons();
+                    showToast('Registo apagado');
+                }
+            );
+        }
+
+        // =========================================================================
+        // 4. BANCO DE ATIVIDADES
+        // =========================================================================
+        function renderActivities() {
+            const list = document.getElementById('activities-list');
+            const query = (document.getElementById('act-search')?.value || '').trim().toLowerCase();
+
+            const filtered = appData.activities.filter(a =>
+                a.name.toLowerCase().includes(query) ||
+                a.category.toLowerCase().includes(query) ||
+                (a.materials || '').toLowerCase().includes(query) ||
+                (a.desc || '').toLowerCase().includes(query)
+            );
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<p class="text-xs text-ink-muted text-center py-8 col-span-full bg-white/70 rounded-xl border border-dashed border-warmborder">Nenhuma atividade encontrada para o filtro atual.</p>`;
+                return;
+            }
+
+            list.innerHTML = filtered.map(a => `
+                <div class="bg-white border border-warmborder rounded-xl p-4 shadow-2xs flex flex-col justify-between gap-3">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-1.5">
+                            <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-sage-light text-sage-dark">${escapeHtml(a.category)}</span>
+                            <div class="flex items-center gap-1">
+                                <button type="button" onclick="editActivity('${a.id}')" class="px-2 py-1 rounded-lg bg-desk hover:bg-sage-light text-ink hover:text-sage-dark text-[11px] font-semibold flex items-center gap-1 transition-colors" title="Editar atividade">
+                                    <i data-lucide="pencil" class="w-3 h-3"></i>
+                                    <span>Editar</span>
+                                </button>
+                                <button type="button" onclick="deleteActivity('${a.id}')" class="p-1 rounded-lg text-ink-subtle hover:text-terracotta-dark transition-colors" title="Apagar atividade">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <h3 class="font-serif font-semibold text-ink text-sm sm:text-base mb-1">${escapeHtml(a.name)}</h3>
+                        ${a.materials ? `<p class="text-xs text-ink-muted mb-1.5"><strong>Materiais:</strong> ${escapeHtml(a.materials)}</p>` : ''}
+                        <p class="text-xs text-ink leading-relaxed">${escapeHtml(a.desc || '')}</p>
+                    </div>
+                    <div class="pt-2.5 border-t border-warmborder/70 flex justify-end">
+                        <button type="button" onclick="sendActivityToSessionRecord('${a.id}')" class="px-3 py-1.5 rounded-lg bg-sage-light hover:bg-sage text-sage-dark hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                            <span>Enviar para Registo</span>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            refreshIcons();
+        }
+
+        function editActivity(id) {
+            const act = appData.activities.find(a => a.id === id);
+            if (!act) return;
+
+            document.getElementById('act-edit-id').value = act.id;
+            document.getElementById('act-name').value = act.name;
+            document.getElementById('act-category').value = act.category;
+            document.getElementById('act-materials').value = act.materials || '';
+            document.getElementById('act-desc').value = act.desc || '';
+
+            document.getElementById('act-form-title').textContent = 'Editar Atividade';
+            document.getElementById('act-submit-btn').textContent = 'Guardar Alterações da Atividade';
+            document.getElementById('act-cancel-btn').classList.remove('hidden');
+
+            switchTab('atividades');
+        }
+
+        function resetActivityForm() {
+            document.getElementById('act-edit-id').value = '';
+            document.getElementById('activity-form').reset();
+            document.getElementById('act-form-title').textContent = 'Nova Atividade';
+            document.getElementById('act-submit-btn').textContent = 'Guardar no Banco de Atividades';
+            document.getElementById('act-cancel-btn').classList.add('hidden');
+        }
+
+        function deleteActivity(id) {
+            showConfirmModal(
+                'Apagar atividade do banco?',
+                'Esta atividade será removida do seu banco local.',
+                () => {
+                    appData.activities = appData.activities.filter(a => a.id !== id);
+                    removeLinkedActivity(id);
+                    appData.notes.forEach(n => {
+                        if (Array.isArray(n.activityIds)) {
+                            n.activityIds = n.activityIds.filter(aid => aid !== id);
+                        }
+                        if (n.activityId === id) {
+                            n.activityId = null;
+                        }
+                    });
+                    if (document.getElementById('act-edit-id').value === id) {
+                        resetActivityForm();
+                    }
+                    saveData();
+                    renderBankActivityPicker();
+                    renderActivities();
+                    renderNotes();
+                    showToast('Atividade removida');
+                }
+            );
+        }
+
+        // =========================================================================
+        // 5. CONTROLO FINANCEIRO (INTERLIGADO ÀS SESSÕES E VALORES)
+        // =========================================================================
+        function getFinancialEntries() {
+            const entries = [];
+            const linkedAppointmentIds = new Set(
+                appData.notes.map(n => n.appointmentId).filter(Boolean)
+            );
+
+            appData.appointments.forEach(a => {
+                const client = appData.clients.find(c => c.id === a.clientId);
+                const hasNote = linkedAppointmentIds.has(a.id);
+                entries.push({
+                    sourceType: 'appointment',
+                    sourceId: a.id,
+                    clientId: a.clientId || '',
+                    clientName: client ? client.name : 'Utente',
+                    date: a.date || '',
+                    detail: `${a.time || ''} • ${a.context || 'Sessão'} (${a.status})${hasNote ? ' • Com registo' : ''}`,
+                    price: parseFloat(a.price) || 0,
+                    paid: Boolean(a.paid)
+                });
+            });
+
+            appData.notes.forEach(n => {
+                if (n.appointmentId && appData.appointments.some(a => a.id === n.appointmentId)) {
+                    return;
+                }
+                const p = parseFloat(n.price) || 0;
+                if (p > 0 || n.paid) {
+                    const client = appData.clients.find(c => c.id === n.clientId);
+                    entries.push({
+                        sourceType: 'note',
+                        sourceId: n.id,
+                        clientId: n.clientId || '',
+                        clientName: client ? client.name : 'Utente',
+                        date: n.date || '',
+                        detail: n.activities ? `Registo: ${n.activities}` : 'Registo de sessão',
+                        price: p,
+                        paid: Boolean(n.paid)
+                    });
+                }
+            });
+
+            return entries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        }
+
+        function renderFinance() {
+            const list = document.getElementById('fin-list');
+            const filterVal = document.getElementById('fin-filter')?.value || 'all';
+            const selectedClientId = document.getElementById('fin-client-select')?.value || '';
+            const searchQuery = (document.getElementById('fin-client-search')?.value || '').trim().toLowerCase();
+            const allEntries = getFinancialEntries();
+
+            let paidTotal = 0;
+            let pendingTotal = 0;
+            let paidCount = 0;
+            let pendingCount = 0;
+
+            allEntries.forEach(e => {
+                if (e.paid) {
+                    paidTotal += e.price;
+                    paidCount++;
+                } else {
+                    pendingTotal += e.price;
+                    pendingCount++;
+                }
+            });
+
+            document.getElementById('fin-paid-total').textContent = formatEuro(paidTotal);
+            document.getElementById('fin-paid-count').textContent = `${paidCount} ${paidCount === 1 ? 'sessão paga' : 'sessões pagas'}`;
+            document.getElementById('fin-pending-total').textContent = formatEuro(pendingTotal);
+            document.getElementById('fin-pending-count').textContent = `${pendingCount} ${pendingCount === 1 ? 'sessão pendente' : 'sessões pendentes'}`;
+            document.getElementById('fin-all-total').textContent = formatEuro(paidTotal + pendingTotal);
+
+            const hasClientFilter = Boolean(selectedClientId || searchQuery);
+            const clientMatchedEntries = allEntries.filter(e => {
+                if (selectedClientId && e.clientId !== selectedClientId) return false;
+                if (searchQuery && !e.clientName.toLowerCase().includes(searchQuery)) return false;
+                return true;
+            });
+
+            const summaryBox = document.getElementById('fin-client-summary');
+            if (summaryBox) {
+                if (hasClientFilter) {
+                    let cPaid = 0;
+                    let cPending = 0;
+                    clientMatchedEntries.forEach(item => {
+                        if (item.paid) cPaid += item.price;
+                        else cPending += item.price;
+                    });
+
+                    const selectedClientObj = selectedClientId ? appData.clients.find(c => c.id === selectedClientId) : null;
+                    const labelText = selectedClientObj
+                        ? `Utente: ${selectedClientObj.name}`
+                        : `Pesquisa por utente: "${searchQuery}"`;
+
+                    document.getElementById('fin-client-summary-label').textContent = labelText;
+                    document.getElementById('fin-client-sessions').textContent = `${clientMatchedEntries.length} ${clientMatchedEntries.length === 1 ? 'sessão' : 'sessões'}`;
+                    document.getElementById('fin-client-paid').textContent = `Pago: ${formatEuro(cPaid)}`;
+                    document.getElementById('fin-client-pending').textContent = `Por pagar: ${formatEuro(cPending)}`;
+                    summaryBox.classList.remove('hidden');
+                } else {
+                    summaryBox.classList.add('hidden');
+                }
+            }
+
+            const visibleEntries = clientMatchedEntries.filter(e => {
+                if (filterVal === 'paid') return e.paid;
+                if (filterVal === 'unpaid') return !e.paid;
+                return true;
+            });
+
+            if (visibleEntries.length === 0) {
+                list.innerHTML = `<p class="text-xs text-ink-muted text-center py-8 bg-white/70 rounded-xl border border-dashed border-warmborder">Sem movimentos financeiros correspondentes ao filtro.</p>`;
+                return;
+            }
+
+            list.innerHTML = visibleEntries.map(e => `
+                <div class="bg-white border border-warmborder rounded-xl p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="font-serif font-semibold text-ink text-sm">${escapeHtml(e.clientName)}</span>
+                            <span class="text-xs text-ink-muted">${escapeHtml(formatDatePt(e.date))}</span>
+                        </div>
+                        <p class="text-xs text-ink-muted mt-0.5">${escapeHtml(e.detail)}</p>
+                    </div>
+
+                    <div class="flex items-center justify-between sm:justify-end gap-3">
+                        <span class="font-bold text-sm ${e.paid ? 'text-sage-dark' : 'text-ink'}">${formatEuro(e.price)}</span>
+
+                        <label class="flex items-center gap-1.5 text-xs font-semibold cursor-pointer select-none px-2.5 py-1 rounded-lg border ${e.paid ? 'bg-sage-light border-sage/30 text-sage-dark' : 'bg-terracotta-light border-terracotta/30 text-terracotta-dark'}">
+                            <input type="checkbox" ${e.paid ? 'checked' : ''} onchange="toggleFinancePaid('${e.sourceType}', '${e.sourceId}')" class="w-3.5 h-3.5 accent-sage rounded">
+                            <span>${e.paid ? 'Pago' : 'Por pagar'}</span>
+                        </label>
+
+                        <button type="button" onclick="editFinanceSource('${e.sourceType}', '${e.sourceId}')" class="px-2.5 py-1.5 rounded-lg bg-desk hover:bg-sage-light text-ink hover:text-sage-dark text-xs font-semibold flex items-center gap-1 transition-colors" title="Editar valor ou sessão">
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                            <span>Editar</span>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            refreshIcons();
+        }
+
+        function toggleFinancePaid(sourceType, sourceId) {
+            if (sourceType === 'appointment') {
+                const appt = appData.appointments.find(a => a.id === sourceId);
+                if (appt) {
+                    appt.paid = !appt.paid;
+                    appData.notes.forEach(n => {
+                        if (n.appointmentId === sourceId) {
+                            n.paid = appt.paid;
+                        }
+                    });
+                }
+            } else if (sourceType === 'note') {
+                const note = appData.notes.find(n => n.id === sourceId);
+                if (note) {
+                    note.paid = !note.paid;
+                    if (note.appointmentId) {
+                        const appt = appData.appointments.find(a => a.id === note.appointmentId);
+                        if (appt) appt.paid = note.paid;
+                    }
+                }
+            }
+            saveData();
+            renderAppointments();
+            renderNotes();
+            renderFinance();
+            showToast('Estado de pagamento atualizado');
+        }
+
+        function editFinanceSource(sourceType, sourceId) {
+            if (sourceType === 'appointment') {
+                editAppointment(sourceId);
+            } else if (sourceType === 'note') {
+                editNote(sourceId);
+            }
+        }
+
+        // =========================================================================
+        // SUBMISSÃO DOS FORMULÁRIOS
+        // =========================================================================
+        function setupForms() {
+            document.getElementById('appt-client').addEventListener('change', (e) => {
+                if (!document.getElementById('appt-edit-id').value) {
+                    applyClientDefaultPrice(e.target.value, 'appt-price');
+                }
+            });
+
+            document.getElementById('sn-client').addEventListener('change', (e) => {
+                if (!document.getElementById('sn-edit-id').value) {
+                    applyClientDefaultPrice(e.target.value, 'sn-price');
+                }
+            });
+
+            document.getElementById('appointment-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const editId = document.getElementById('appt-edit-id').value;
+                const clientId = document.getElementById('appt-client').value;
+                const date = document.getElementById('appt-date').value;
+                const time = document.getElementById('appt-time').value;
+                const context = document.getElementById('appt-context').value;
+                const price = parseFloat(document.getElementById('appt-price').value) || 0;
+                const status = document.getElementById('appt-status').value;
+                const paid = document.getElementById('appt-paid').checked;
+
+                if (!clientId) {
+                    showToast('Crie primeiro uma ficha de utente.');
+                    return;
+                }
+
+                if (editId) {
+                    const appt = appData.appointments.find(a => a.id === editId);
+                    if (appt) {
+                        appt.clientId = clientId;
+                        appt.date = date;
+                        appt.time = time;
+                        appt.context = context;
+                        appt.price = price;
+                        appt.status = status;
+                        appt.paid = paid;
+
+                        appData.notes.forEach(n => {
+                            if (n.appointmentId === editId) {
+                                n.clientId = clientId;
+                                n.date = date;
+                                n.price = price;
+                                n.paid = paid;
+                            }
+                        });
+                    }
+                    showToast('Sessão atualizada');
+                } else {
+                    appData.appointments.push({
+                        id: 'a_' + Date.now(),
+                        clientId,
+                        date,
+                        time,
+                        context,
+                        price,
+                        status,
+                        paid
+                    });
+                    showToast('Sessão marcada na agenda');
+                }
+
+                selectedCalendarDate = date;
+                onApptDateChange(date);
+                saveData();
+                renderAll();
+                resetAppointmentForm();
+            });
+
+            document.getElementById('client-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const editId = document.getElementById('client-edit-id').value;
+                const name = document.getElementById('client-name').value.trim();
+                const ageVal = document.getElementById('client-age').value;
+                const age = ageVal ? parseInt(ageVal, 10) : '';
+                const defaultPrice = parseFloat(document.getElementById('client-default-price').value) || 0;
+                const contact = document.getElementById('client-contact').value.trim();
+                const goals = document.getElementById('client-goals').value.trim();
+
+                if (!name) return;
+
+                if (editId) {
+                    const c = appData.clients.find(x => x.id === editId);
+                    if (c) {
+                        c.name = name;
+                        c.age = age;
+                        c.defaultPrice = defaultPrice;
+                        c.contact = contact;
+                        c.goals = goals;
+                    }
+                    showToast('Ficha de utente atualizada');
+                } else {
+                    appData.clients.push({
+                        id: 'c_' + Date.now(),
+                        name,
+                        age,
+                        defaultPrice,
+                        contact,
+                        goals
+                    });
+                    showToast('Ficha de utente guardada');
+                }
+
+                saveData();
+                renderAll();
+                resetClientForm();
+            });
+
+            document.getElementById('session-note-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const editId = document.getElementById('sn-edit-id').value;
+                const appointmentId = document.getElementById('sn-scheduled-session')?.value || null;
+                const clientId = document.getElementById('sn-client').value;
+                const date = document.getElementById('sn-date').value || getTodayIso();
+                const price = parseFloat(document.getElementById('sn-price').value) || 0;
+                const activities = document.getElementById('sn-activities').value.trim();
+                const content = document.getElementById('sn-content').value.trim();
+                const paid = document.getElementById('sn-paid').checked;
+                const markRealized = document.getElementById('sn-mark-realized').checked;
+
+                if (!clientId) {
+                    showToast('Crie primeiro uma ficha de utente.');
+                    return;
+                }
+                if (!content) return;
+
+                if (editId) {
+                    const n = appData.notes.find(x => x.id === editId);
+                    if (n) {
+                        n.clientId = clientId;
+                        n.appointmentId = appointmentId;
+                        n.date = date;
+                        n.price = price;
+                        n.activities = activities;
+                        n.activityIds = [...linkedActivityIds];
+                        n.activityId = linkedActivityIds[0] || null;
+                        n.content = content;
+                        n.paid = paid;
+                    }
+                    showToast('Registo de sessão atualizado');
+                } else {
+                    appData.notes.push({
+                        id: 'n_' + Date.now(),
+                        clientId,
+                        appointmentId,
+                        date,
+                        price,
+                        activities,
+                        activityIds: [...linkedActivityIds],
+                        activityId: linkedActivityIds[0] || null,
+                        content,
+                        paid
+                    });
+                    showToast('Registo de sessão guardado');
+                }
+
+                if (appointmentId) {
+                    const linkedAppt = appData.appointments.find(a => a.id === appointmentId);
+                    if (linkedAppt) {
+                        linkedAppt.paid = paid;
+                        linkedAppt.price = price;
+                        if (markRealized) {
+                            linkedAppt.status = 'Realizada';
+                        }
+                    }
+                }
+
+                saveData();
+                renderAll();
+                resetNoteForm();
+            });
+
+            document.getElementById('activity-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const editId = document.getElementById('act-edit-id').value;
+                const name = document.getElementById('act-name').value.trim();
+                const category = document.getElementById('act-category').value;
+                const materials = document.getElementById('act-materials').value.trim();
+                const desc = document.getElementById('act-desc').value.trim();
+
+                if (!name) return;
+
+                if (editId) {
+                    const act = appData.activities.find(a => a.id === editId);
+                    if (act) {
+                        act.name = name;
+                        act.category = category;
+                        act.materials = materials;
+                        act.desc = desc;
+                    }
+                    showToast('Atividade atualizada no banco');
+                } else {
+                    appData.activities.push({
+                        id: 'act_' + Date.now(),
+                        name,
+                        category,
+                        materials,
+                        desc
+                    });
+                    showToast('Atividade adicionada ao banco');
+                }
+
+                saveData();
+                renderBankActivityPicker();
+                renderActivities();
+                resetActivityForm();
+            });
+        }
+
+        // =========================================================================
+        // LIMPAR DADOS & CÓPIA DE SEGURANÇA (EXPORTAR / IMPORTAR JSON)
+        // =========================================================================
+        function askClearAllData() {
+            showConfirmModal(
+                'Limpar todos os dados locais?',
+                'Isto irá apagar todas as fichas, sessões, registos e atividades guardadas neste navegador.',
+                () => {
+                    appData = JSON.parse(JSON.stringify(emptyData));
+                    linkedActivityIds = [];
+                    saveData();
+                    resetAppointmentForm();
+                    resetClientForm();
+                    resetNoteForm();
+                    resetActivityForm();
+                    clearFinanceClientFilter();
+                    renderAll();
+                    refreshIcons();
+                    showToast('Base de dados limpa');
+                }
+            );
+        }
+
+        function exportBackup() {
+            try {
+                const payload = JSON.stringify(appData, null, 2);
+                const blob = new Blob([payload], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `backup-terapia-ocupacional-${getTodayIso()}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                showToast('Cópia de segurança exportada com sucesso');
+            } catch (err) {
+                console.error('Erro ao exportar backup:', err);
+                showToast('Não foi possível exportar a cópia de segurança');
+            }
+        }
+
+        function importBackup(event) {
+            const input = event.target;
+            const file = input.files && input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (
+                        Array.isArray(parsed.clients) &&
+                        Array.isArray(parsed.appointments)
+                    ) {
+                        appData = {
+                            clients: parsed.clients,
+                            appointments: parsed.appointments,
+                            notes: Array.isArray(parsed.notes) ? parsed.notes : [],
+                            activities: Array.isArray(parsed.activities) ? parsed.activities : []
+                        };
+                        saveData();
+                        renderAll();
+                        refreshIcons();
+                        showToast('Dados importados com sucesso');
+                    } else {
+                        showToast('O ficheiro selecionado não tem um formato válido');
+                    }
+                } catch (err) {
+                    console.error('Erro ao importar JSON:', err);
+                    showToast('Erro ao ler o ficheiro de cópia de segurança');
+                } finally {
+                    input.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // =========================================================================
+        // UTILITÁRIOS DE FORMATAÇÃO E INTERFACE
+        // =========================================================================
+        function formatEuro(val) {
+            const num = Number(val) || 0;
+            return num.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+        }
+
+        function formatDatePt(isoDate) {
+            if (!isoDate) return '';
+            const parts = isoDate.split('-');
+            if (parts.length !== 3) return isoDate;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-ink text-linen text-xs font-medium px-4 py-2.5 rounded-xl shadow-card flex items-center gap-2 transition-all duration-300 translate-y-2 opacity-0';
+            toast.innerHTML = `<span class="w-2 h-2 rounded-full bg-sage"></span><span>${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2600);
+        }
+
+        function showConfirmModal(title, message, onConfirm) {
+            const modal = document.getElementById('confirm-modal');
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            const cancelBtn = document.getElementById('confirm-cancel');
+            const okBtn = document.getElementById('confirm-ok');
+
+            const cleanup = () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                cancelBtn.onclick = null;
+                okBtn.onclick = null;
+            };
+
+            cancelBtn.onclick = cleanup;
+            okBtn.onclick = () => {
+                cleanup();
+                onConfirm();
+            };
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
