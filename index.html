@@ -365,12 +365,39 @@
                     </div>
                     <div class="grid grid-cols-2 gap-2.5">
                         <div>
+                            <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Data de Nascimento</label>
+                            <input type="date" id="client-birthdate" onchange="onClientBirthdateChange(this.value)" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                        </div>
+                        <div>
                             <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Idade</label>
                             <input type="number" id="client-age" min="0" max="120" placeholder="6" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">NIF</label>
+                            <input type="text" id="client-nif" inputmode="numeric" maxlength="15" placeholder="Ex: 123 456 789" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Valor Padrão (€)</label>
                             <input type="number" id="client-default-price" value="45" min="0" step="0.5" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Tem Seguro de Saúde?</label>
+                        <select id="client-has-insurance" onchange="toggleClientInsuranceField()" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                            <option value="nao">Não</option>
+                            <option value="sim">Sim</option>
+                        </select>
+                    </div>
+                    <div id="client-insurance-details-wrap" class="hidden grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">Qual o Seguro?</label>
+                            <input type="text" id="client-insurance-name" placeholder="Ex: Médis, Multicare, ADSE..." class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">N.º do Seguro / Apólice</label>
+                            <input type="text" id="client-insurance-number" placeholder="Ex: 001234567" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-sage">
                         </div>
                     </div>
                     <div>
@@ -873,6 +900,9 @@
             const query = input.value.trim().toLowerCase();
             const matches = appData.clients.filter(c =>
                 c.name.toLowerCase().includes(query) ||
+                (c.nif || '').toLowerCase().includes(query) ||
+                (c.insuranceName || '').toLowerCase().includes(query) ||
+                (c.insuranceNumber || '').toLowerCase().includes(query) ||
                 (c.contact || '').toLowerCase().includes(query) ||
                 (c.goals || '').toLowerCase().includes(query)
             );
@@ -1378,6 +1408,42 @@
         // =========================================================================
         // 2. FICHAS DE UTENTES
         // =========================================================================
+        function calculateAgeFromBirthdate(isoBirthdate) {
+            if (!isoBirthdate) return '';
+            const parts = isoBirthdate.split('-');
+            if (parts.length !== 3) return '';
+            const birthYear = parseInt(parts[0], 10);
+            const birthMonth = parseInt(parts[1], 10) - 1;
+            const birthDay = parseInt(parts[2], 10);
+            const today = new Date();
+            let age = today.getFullYear() - birthYear;
+            const mDiff = today.getMonth() - birthMonth;
+            if (mDiff < 0 || (mDiff === 0 && today.getDate() < birthDay)) {
+                age--;
+            }
+            return age >= 0 ? age : '';
+        }
+
+        function onClientBirthdateChange(isoBirthdate) {
+            const ageInput = document.getElementById('client-age');
+            if (!ageInput) return;
+            const computed = calculateAgeFromBirthdate(isoBirthdate);
+            if (computed !== '') {
+                ageInput.value = computed;
+            }
+        }
+
+        function toggleClientInsuranceField() {
+            const hasIns = document.getElementById('client-has-insurance')?.value === 'sim';
+            const wrap = document.getElementById('client-insurance-details-wrap');
+            if (!wrap) return;
+            if (hasIns) {
+                wrap.classList.remove('hidden');
+            } else {
+                wrap.classList.add('hidden');
+            }
+        }
+
         function renderClients() {
             const list = document.getElementById('clients-list');
             document.getElementById('clients-count').textContent = `${appData.clients.length} ${appData.clients.length === 1 ? 'utente' : 'utentes'}`;
@@ -1387,13 +1453,31 @@
                 return;
             }
 
-            list.innerHTML = appData.clients.map(c => `
+            list.innerHTML = appData.clients.map(c => {
+                const displayAge = c.birthdate ? calculateAgeFromBirthdate(c.birthdate) : c.age;
+                const insuranceBadge = c.hasInsurance
+                    ? `Seguro: ${c.insuranceName || 'Sim'}${c.insuranceNumber ? ' • N.º ' + c.insuranceNumber : ''}`
+                    : '';
+                const insuranceSummaryParts = [];
+                if (c.hasInsurance) {
+                    insuranceSummaryParts.push(c.insuranceName || 'Sim');
+                    if (c.insuranceNumber) insuranceSummaryParts.push(`N.º ${c.insuranceNumber}`);
+                }
+                const insuranceText = c.hasInsurance ? insuranceSummaryParts.join(' • ') : 'Não';
+
+                return `
                 <div class="bg-white border border-warmborder rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                     <div class="space-y-1">
                         <div class="flex flex-wrap items-center gap-2">
                             <h3 class="font-serif font-semibold text-ink text-base">${escapeHtml(c.name)}</h3>
-                            ${c.age ? `<span class="text-xs bg-desk px-2 py-0.5 rounded-full text-ink-muted">${escapeHtml(String(c.age))} anos</span>` : ''}
+                            ${displayAge !== '' && displayAge !== undefined && displayAge !== null ? `<span class="text-xs bg-desk px-2 py-0.5 rounded-full text-ink-muted">${escapeHtml(String(displayAge))} anos</span>` : ''}
                             <span class="text-xs bg-sage-light px-2 py-0.5 rounded-full text-sage-dark font-semibold">Sessão: ${formatEuro(c.defaultPrice)}</span>
+                            ${c.hasInsurance ? `<span class="text-xs bg-ochre-light px-2 py-0.5 rounded-full text-[#8A611E] font-semibold">${escapeHtml(insuranceBadge)}</span>` : ''}
+                        </div>
+                        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-muted">
+                            ${c.birthdate ? `<span><strong>Data Nasc.:</strong> ${escapeHtml(formatDatePt(c.birthdate))}</span>` : ''}
+                            ${c.nif ? `<span><strong>NIF:</strong> ${escapeHtml(c.nif)}</span>` : ''}
+                            <span><strong>Seguro:</strong> ${escapeHtml(insuranceText)}</span>
                         </div>
                         ${c.contact ? `<p class="text-xs text-ink-muted"><strong>Contacto:</strong> ${escapeHtml(c.contact)}</p>` : ''}
                         <p class="text-xs text-ink leading-relaxed pt-0.5"><strong>Objetivos terapêuticos:</strong> ${escapeHtml(c.goals || 'Por definir')}</p>
@@ -1408,7 +1492,8 @@
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             refreshIcons();
         }
@@ -1419,8 +1504,14 @@
 
             document.getElementById('client-edit-id').value = c.id;
             document.getElementById('client-name').value = c.name;
-            document.getElementById('client-age').value = c.age || '';
+            document.getElementById('client-birthdate').value = c.birthdate || '';
+            document.getElementById('client-age').value = c.birthdate ? calculateAgeFromBirthdate(c.birthdate) : (c.age || '');
+            document.getElementById('client-nif').value = c.nif || '';
             document.getElementById('client-default-price').value = c.defaultPrice ?? 45;
+            document.getElementById('client-has-insurance').value = c.hasInsurance ? 'sim' : 'nao';
+            document.getElementById('client-insurance-name').value = c.insuranceName || '';
+            document.getElementById('client-insurance-number').value = c.insuranceNumber || '';
+            toggleClientInsuranceField();
             document.getElementById('client-contact').value = c.contact || '';
             document.getElementById('client-goals').value = c.goals || '';
 
@@ -1434,6 +1525,12 @@
         function resetClientForm() {
             document.getElementById('client-edit-id').value = '';
             document.getElementById('client-form').reset();
+            document.getElementById('client-birthdate').value = '';
+            document.getElementById('client-nif').value = '';
+            document.getElementById('client-has-insurance').value = 'nao';
+            document.getElementById('client-insurance-name').value = '';
+            document.getElementById('client-insurance-number').value = '';
+            toggleClientInsuranceField();
             document.getElementById('client-default-price').value = 45;
             document.getElementById('client-form-title').textContent = 'Nova Ficha de Utente';
             document.getElementById('client-submit-btn').textContent = 'Guardar Ficha de Utente';
@@ -2196,9 +2293,14 @@
                 e.preventDefault();
                 const editId = document.getElementById('client-edit-id').value;
                 const name = document.getElementById('client-name').value.trim();
+                const birthdate = document.getElementById('client-birthdate').value || '';
                 const ageVal = document.getElementById('client-age').value;
-                const age = ageVal ? parseInt(ageVal, 10) : '';
+                const age = ageVal !== '' ? parseInt(ageVal, 10) : (birthdate ? calculateAgeFromBirthdate(birthdate) : '');
+                const nif = document.getElementById('client-nif').value.trim();
                 const defaultPrice = parseFloat(document.getElementById('client-default-price').value) || 0;
+                const hasInsurance = document.getElementById('client-has-insurance').value === 'sim';
+                const insuranceName = hasInsurance ? document.getElementById('client-insurance-name').value.trim() : '';
+                const insuranceNumber = hasInsurance ? document.getElementById('client-insurance-number').value.trim() : '';
                 const contact = document.getElementById('client-contact').value.trim();
                 const goals = document.getElementById('client-goals').value.trim();
 
@@ -2208,8 +2310,13 @@
                     const c = appData.clients.find(x => x.id === editId);
                     if (c) {
                         c.name = name;
+                        c.birthdate = birthdate;
                         c.age = age;
+                        c.nif = nif;
                         c.defaultPrice = defaultPrice;
+                        c.hasInsurance = hasInsurance;
+                        c.insuranceName = insuranceName;
+                        c.insuranceNumber = insuranceNumber;
                         c.contact = contact;
                         c.goals = goals;
                     }
@@ -2218,8 +2325,13 @@
                     appData.clients.push({
                         id: 'c_' + Date.now(),
                         name,
+                        birthdate,
                         age,
+                        nif,
                         defaultPrice,
+                        hasInsurance,
+                        insuranceName,
+                        insuranceNumber,
                         contact,
                         goals
                     });
