@@ -194,7 +194,7 @@
                     <h3 class="font-serif font-semibold text-sm text-ink">Como navegar com mais rapidez</h3>
                     <p class="text-ink-muted">1. <strong>Agenda:</strong> clique num dia do calendário para filtrar ou marcar sessões, e use <em>Registo</em> para abrir logo a nota clínica correspondente.</p>
                     <p class="text-ink-muted">2. <strong>Sessões & Registos:</strong> associe uma sessão agendada e adicione uma ou várias atividades do <em>Banco de Atividades</em> antes de guardar.</p>
-                    <p class="text-ink-muted">3. <strong>Controlo Financeiro:</strong> as sessões ligadas a registos não duplicam valores; filtre por utente ou altere o estado <em>Pago / Por pagar</em> em tempo real.</p>
+                    <p class="text-ink-muted">3. <strong>Controlo Financeiro:</strong> filtre por <strong>Mês</strong> e por <strong>Utente</strong> para emitir uma fatura mensal conjunta ou marcar sessões pagas/faturadas individualmente.</p>
                     <p class="text-ink-muted">4. <strong>Atalho:</strong> prima <kbd class="px-1.5 py-0.5 bg-desk border border-warmborder rounded text-[10px] font-semibold">Esc</kbd> para fechar janelas de confirmação ou listas rápidas.</p>
                 </div>
                 <button type="button" onclick="toggleWorkflowGuide()" class="text-ink-subtle hover:text-ink p-1" title="Fechar guia">
@@ -322,6 +322,11 @@
                                 <span class="text-xs font-semibold text-ink">Sessão Paga</span>
                             </label>
                         </div>
+
+                        <label class="flex items-center gap-2 bg-white border border-warmborder rounded-xl px-3 py-2 cursor-pointer select-none">
+                            <input type="checkbox" id="appt-invoiced" class="w-4 h-4 accent-sage rounded">
+                            <span class="text-xs font-semibold text-ink">Fatura já emitida</span>
+                        </label>
 
                         <button type="submit" id="appt-submit-btn" class="w-full py-2.5 rounded-xl bg-sage text-white hover:bg-sage-dark font-semibold text-sm transition-colors shadow-xs">
                             Guardar Sessão na Agenda
@@ -492,6 +497,10 @@
                         <input type="checkbox" id="sn-paid" class="w-4 h-4 accent-sage rounded">
                         <span class="text-xs font-semibold text-ink">Marcar esta sessão como paga (reflete no Controlo Financeiro)</span>
                     </label>
+                    <label class="flex items-center gap-2 bg-white border border-warmborder rounded-xl px-3 py-2.5 cursor-pointer select-none">
+                        <input type="checkbox" id="sn-invoiced" class="w-4 h-4 accent-sage rounded">
+                        <span class="text-xs font-semibold text-ink">Fatura já emitida para esta sessão</span>
+                    </label>
                     <label class="flex items-center gap-2 bg-white/80 border border-warmborder rounded-xl px-3 py-2.5 cursor-pointer select-none">
                         <input type="checkbox" id="sn-mark-realized" checked class="w-4 h-4 accent-sage rounded">
                         <span class="text-xs font-medium text-ink">Marcar sessão agendada associada como "Realizada"</span>
@@ -582,13 +591,30 @@
         </section>
 
         <!-- =================================================================== -->
-        <!-- 5. CONTROLO FINANCEIRO (INTERLIGADO ÀS SESSÕES E VALORES)           -->
+        <!-- 5. CONTROLO FINANCEIRO (POR MÊS E POR UTENTE + FATURA MENSAL)       -->
         <!-- =================================================================== -->
         <section id="mod-financeiro" class="tab-section hidden grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
             <!-- Coluna Esquerda (4 cols): Indicadores Financeiros -->
             <div class="lg:col-span-4 flex flex-col gap-4 bg-linen border border-warmborder rounded-2xl p-5 shadow-soft">
-                <h2 class="font-serif text-lg font-semibold text-ink">Resumo Financeiro</h2>
+                <div class="flex items-center justify-between gap-2">
+                    <h2 class="font-serif text-lg font-semibold text-ink">Resumo Financeiro</h2>
+                    <span id="fin-selected-month-badge" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-desk text-ink-muted border border-warmborder">Todos os meses</span>
+                </div>
+
+                <div>
+                    <label for="fin-month-select" class="block text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1">Separar por Mês</label>
+                    <select id="fin-month-select" onchange="renderFinance()" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-xs font-semibold text-ink focus:outline-none focus:border-sage">
+                        <option value="all">Todos os meses</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="fin-client-select" class="block text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1">Filtrar por Utente</label>
+                    <select id="fin-client-select" onchange="onFinClientSelectChange()" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-xs font-semibold text-ink focus:outline-none focus:border-sage">
+                        <option value="">Todos os utentes</option>
+                    </select>
+                </div>
 
                 <div class="bg-sage-light/70 border border-sage/25 rounded-2xl p-4">
                     <span class="text-xs font-bold uppercase tracking-wider text-sage-dark block mb-1">Total Recebido (Sessões Pagas)</span>
@@ -605,56 +631,82 @@
                 <div class="bg-white border border-warmborder rounded-2xl p-4">
                     <span class="text-xs font-bold uppercase tracking-wider text-ink-muted block mb-1">Total Geral Previsto / Registado</span>
                     <div id="fin-all-total" class="font-serif text-xl font-bold text-ink">0,00 €</div>
-                    <p class="text-xs text-ink-muted mt-1">Atualizado automaticamente a partir das sessões.</p>
+                    <p id="fin-invoice-summary" class="text-xs text-ink-muted mt-1">0 faturas emitidas • 0 por emitir</p>
                 </div>
             </div>
 
-            <!-- Coluna Direita (8 cols): Movimentos de Sessões com Edição Direta -->
+            <!-- Coluna Direita (8 cols): Movimentos de Sessões e Gestão Mensal por Utente -->
             <div class="lg:col-span-8 bg-linen border border-warmborder rounded-2xl p-5 sm:p-6 shadow-soft">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                     <div>
-                        <h2 class="font-serif text-lg font-semibold text-ink">Sessões & Valores Financeiros</h2>
-                        <p class="text-xs text-ink-muted">Altere o pagamento com um clique ou edite o valor e estado diretamente.</p>
+                        <h2 class="font-serif text-lg font-semibold text-ink">Sessões & Faturação por Mês e Utente</h2>
+                        <p class="text-xs text-ink-muted">Gerir sessões individuais ou emitir uma fatura mensal conjunta para todas as sessões de um utente no mês.</p>
                     </div>
-                    <select id="fin-filter" onchange="renderFinance()" class="bg-white border border-warmborder rounded-xl px-3 py-1.5 text-xs font-medium text-ink focus:outline-none focus:border-sage">
-                        <option value="all">Todas as sessões</option>
-                        <option value="paid">Apenas Pagas</option>
-                        <option value="unpaid">Por Pagar</option>
-                    </select>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex items-center bg-desk p-1 rounded-xl border border-warmborder">
+                            <button type="button" onclick="setFinanceViewMode('grouped')" id="fin-view-grouped-btn" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-sage-dark shadow-2xs transition-colors">
+                                Por Mês e Utente
+                            </button>
+                            <button type="button" onclick="setFinanceViewMode('detailed')" id="fin-view-detailed-btn" class="px-2.5 py-1 rounded-lg text-xs font-medium text-ink-muted hover:text-ink transition-colors">
+                                Lista Detalhada
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Barra de Pesquisa e Seleção de Utente no Controlo Financeiro -->
+                <!-- Filtros Rápidos -->
                 <div class="bg-white/80 border border-warmborder rounded-xl p-3.5 mb-4 space-y-3">
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
-                        <div class="sm:col-span-5">
-                            <label for="fin-client-select" class="block text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1">Filtrar por Utente</label>
-                            <select id="fin-client-select" onchange="onFinClientSelectChange()" class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-xs font-medium text-ink focus:outline-none focus:border-sage">
-                                <option value="">Todos os utentes</option>
+                        <div class="sm:col-span-4">
+                            <label for="fin-client-search" class="block text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1">Pesquisar Utente</label>
+                            <input type="text" id="fin-client-search" oninput="onFinClientSearchInput()" placeholder="Nome ou iniciais..." class="w-full bg-white border border-warmborder rounded-xl px-3 py-1.5 text-xs text-ink focus:outline-none focus:border-sage">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label for="fin-filter" class="block text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1">Pagamento</label>
+                            <select id="fin-filter" onchange="renderFinance()" class="w-full bg-white border border-warmborder rounded-xl px-2.5 py-1.5 text-xs font-medium text-ink focus:outline-none focus:border-sage">
+                                <option value="all">Todas</option>
+                                <option value="paid">Pagas</option>
+                                <option value="unpaid">Por Pagar</option>
                             </select>
                         </div>
-                        <div class="sm:col-span-5">
-                            <label for="fin-client-search" class="block text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1">Procurar por Nome</label>
-                            <input type="text" id="fin-client-search" oninput="onFinClientSearchInput()" placeholder="Ex: M. S., T. R..." class="w-full bg-white border border-warmborder rounded-xl px-3 py-2 text-xs text-ink focus:outline-none focus:border-sage">
+                        <div class="sm:col-span-3">
+                            <label for="fin-invoice-filter" class="block text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1">Faturação</label>
+                            <select id="fin-invoice-filter" onchange="renderFinance()" class="w-full bg-white border border-warmborder rounded-xl px-2.5 py-1.5 text-xs font-medium text-ink focus:outline-none focus:border-sage">
+                                <option value="all">Todas</option>
+                                <option value="invoiced">Fatura Emitida</option>
+                                <option value="uninvoiced">Por Emitir</option>
+                            </select>
                         </div>
-                        <div class="sm:col-span-2 sm:pt-5">
-                            <button type="button" onclick="clearFinanceClientFilter()" class="w-full px-2.5 py-2 rounded-xl bg-desk hover:bg-sage-light text-ink hover:text-sage-dark border border-warmborder text-xs font-semibold transition-colors">
+                        <div class="sm:col-span-2 sm:pt-4">
+                            <button type="button" onclick="clearFinanceFilters()" class="w-full px-2.5 py-1.5 rounded-xl bg-desk hover:bg-sage-light text-ink hover:text-sage-dark border border-warmborder text-xs font-semibold transition-colors">
                                 Limpar
                             </button>
                         </div>
                     </div>
 
-                    <!-- Resumo Específico do Utente Selecionado / Filtrado -->
-                    <div id="fin-client-summary" class="hidden pt-2.5 border-t border-warmborder/80 flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <span id="fin-client-summary-label" class="font-semibold text-ink">Resumo do utente</span>
-                        <div class="flex flex-wrap items-center gap-3">
-                            <span id="fin-client-sessions" class="px-2.5 py-1 rounded-lg bg-desk text-ink font-medium">0 sessões</span>
-                            <span id="fin-client-paid" class="px-2.5 py-1 rounded-lg bg-sage-light text-sage-dark font-semibold">Pago: 0,00 €</span>
-                            <span id="fin-client-pending" class="px-2.5 py-1 rounded-lg bg-terracotta-light text-terracotta-dark font-semibold">Por pagar: 0,00 €</span>
+                    <!-- Painel de Fatura Mensal quando um Utente está selecionado -->
+                    <div id="fin-client-summary" class="hidden pt-3 border-t border-warmborder/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                        <div class="space-y-1">
+                            <span id="fin-client-summary-label" class="font-semibold text-ink block">Resumo do utente</span>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span id="fin-client-sessions" class="px-2 py-0.5 rounded-lg bg-desk text-ink font-medium">0 sessões</span>
+                                <span id="fin-client-paid" class="px-2 py-0.5 rounded-lg bg-sage-light text-sage-dark font-semibold">Pago: 0,00 €</span>
+                                <span id="fin-client-pending" class="px-2 py-0.5 rounded-lg bg-terracotta-light text-terracotta-dark font-semibold">Por pagar: 0,00 €</span>
+                            </div>
+                        </div>
+                        <div id="fin-monthly-invoice-actions" class="flex flex-wrap items-center gap-2">
+                            <!-- Botão dinâmico de fatura mensal -->
                         </div>
                     </div>
                 </div>
 
-                <div id="fin-list" class="space-y-2.5 max-h-[540px] overflow-y-auto pr-1">
+                <!-- Vista Agrupada por Mês e Utente -->
+                <div id="fin-grouped-list" class="space-y-3 max-h-[540px] overflow-y-auto pr-1">
+                    <!-- Preenchido via JS -->
+                </div>
+
+                <!-- Vista Detalhada Sessão a Sessão -->
+                <div id="fin-list" class="hidden space-y-2.5 max-h-[540px] overflow-y-auto pr-1">
                     <!-- Preenchido via JS -->
                 </div>
             </div>
@@ -798,6 +850,7 @@
         let calendarViewDate = new Date();
         let showAllAppointmentsInList = false;
         let linkedActivityIds = [];
+        let financeViewMode = 'grouped';
 
         function refreshIcons() {
             try {
@@ -861,6 +914,7 @@
         function renderAll() {
             renderNavBadges();
             renderClientSelects();
+            renderFinanceMonthSelect();
             renderFinanceClientSelect();
             renderBankActivityPicker();
             renderScheduledSessionOptions();
@@ -1012,6 +1066,7 @@
                 renderBankActivityPicker();
                 renderLinkedActivitiesBox();
             } else if (tabName === 'financeiro') {
+                renderFinanceMonthSelect();
                 renderFinanceClientSelect();
                 renderFinance();
             } else if (tabName === 'agenda') {
@@ -1025,6 +1080,15 @@
         // =========================================================================
         // SELECTORES DE UTENTES & PREÇO PADRÃO
         // =========================================================================
+        function applyClientDefaultPrice(clientId, priceInputId) {
+            const priceInput = document.getElementById(priceInputId);
+            if (!priceInput) return;
+            const client = appData.clients.find(c => c.id === clientId);
+            if (client && client.defaultPrice !== undefined && client.defaultPrice !== null) {
+                priceInput.value = client.defaultPrice;
+            }
+        }
+
         function renderClientSelects() {
             const apptSelect = document.getElementById('appt-client');
             const snSelect = document.getElementById('sn-client');
@@ -1101,20 +1165,67 @@
             renderFinance();
         }
 
-        function clearFinanceClientFilter() {
+        function clearFinanceFilters() {
+            const monthEl = document.getElementById('fin-month-select');
             const selectEl = document.getElementById('fin-client-select');
             const searchEl = document.getElementById('fin-client-search');
+            const payEl = document.getElementById('fin-filter');
+            const invEl = document.getElementById('fin-invoice-filter');
+            if (monthEl) monthEl.value = 'all';
             if (selectEl) selectEl.value = '';
             if (searchEl) searchEl.value = '';
+            if (payEl) payEl.value = 'all';
+            if (invEl) invEl.value = 'all';
             renderFinance();
         }
 
-        function applyClientDefaultPrice(clientId, priceInputId) {
-            const priceInput = document.getElementById(priceInputId);
-            if (!priceInput) return;
-            const client = appData.clients.find(c => c.id === clientId);
-            if (client && client.defaultPrice !== undefined && client.defaultPrice !== null) {
-                priceInput.value = client.defaultPrice;
+        function getMonthKeyFromDate(isoDate) {
+            if (!isoDate || typeof isoDate !== 'string') return '';
+            const match = isoDate.match(/^(\d{4})-(\d{2})/);
+            return match ? `${match[1]}-${match[2]}` : '';
+        }
+
+        function formatMonthLabelPt(monthKey) {
+            if (!monthKey || monthKey === 'all') return 'Todos os meses';
+            const parts = monthKey.split('-');
+            if (parts.length !== 2) return monthKey;
+            const year = parseInt(parts[0], 10);
+            const monthIdx = parseInt(parts[1], 10) - 1;
+            const formatter = new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric' });
+            const label = formatter.format(new Date(year, monthIdx, 1));
+            return label.charAt(0).toUpperCase() + label.slice(1);
+        }
+
+        function renderFinanceMonthSelect() {
+            const monthSelect = document.getElementById('fin-month-select');
+            if (!monthSelect) return;
+
+            const prevVal = monthSelect.value;
+            const monthSet = new Set();
+
+            const currentMonthKey = getMonthKeyFromDate(getTodayIso());
+            if (currentMonthKey) monthSet.add(currentMonthKey);
+
+            appData.appointments.forEach(a => {
+                const mk = getMonthKeyFromDate(a.date);
+                if (mk) monthSet.add(mk);
+            });
+            appData.notes.forEach(n => {
+                const mk = getMonthKeyFromDate(n.date);
+                if (mk) monthSet.add(mk);
+            });
+
+            const sortedMonths = [...monthSet].sort((a, b) => b.localeCompare(a));
+            const opts = ['<option value="all">Todos os meses</option>'];
+            sortedMonths.forEach(mk => {
+                opts.push(`<option value="${escapeHtml(mk)}">${escapeHtml(formatMonthLabelPt(mk))}</option>`);
+            });
+
+            monthSelect.innerHTML = opts.join('');
+            if (prevVal && (prevVal === 'all' || monthSet.has(prevVal))) {
+                monthSelect.value = prevVal;
+            } else {
+                monthSelect.value = 'all';
             }
         }
 
@@ -1261,6 +1372,7 @@
                 const client = appData.clients.find(c => c.id === a.clientId);
                 const clientName = client ? client.name : 'Utente não associado';
                 const linkedNote = appData.notes.find(n => n.appointmentId === a.id);
+                const isInvoiced = Boolean(a.invoiced || (linkedNote && linkedNote.invoiced));
                 return `
                     <div class="bg-white border border-warmborder rounded-xl p-3.5 shadow-2xs flex flex-col gap-2.5">
                         <div class="flex items-start justify-between gap-2">
@@ -1276,6 +1388,9 @@
                                     <span class="font-semibold text-ink">${formatEuro(a.price)}</span>
                                     <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold ${a.paid ? 'bg-sage-light text-sage-dark' : 'bg-terracotta-light text-terracotta-dark'}">
                                         ${a.paid ? 'Paga' : 'Por pagar'}
+                                    </span>
+                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold ${isInvoiced ? 'bg-sage-light text-sage-dark' : 'bg-ochre-light text-[#8A611E]'}">
+                                        ${isInvoiced ? 'Fatura Emitida' : 'Por emitir'}
                                     </span>
                                 </div>
                             </div>
@@ -1328,6 +1443,7 @@
             document.getElementById('appt-price').value = appt.price ?? 0;
             document.getElementById('appt-status').value = appt.status || 'Agendada';
             document.getElementById('appt-paid').checked = Boolean(appt.paid);
+            document.getElementById('appt-invoiced').checked = Boolean(appt.invoiced);
 
             document.getElementById('appt-form-title').textContent = 'Editar Sessão';
             document.getElementById('appt-submit-btn').textContent = 'Guardar Alterações da Sessão';
@@ -1345,6 +1461,7 @@
             document.getElementById('appt-context').value = 'Consultório / Clínica';
             document.getElementById('appt-status').value = 'Agendada';
             document.getElementById('appt-paid').checked = false;
+            document.getElementById('appt-invoiced').checked = false;
             applyClientDefaultPrice(document.getElementById('appt-client').value, 'appt-price');
 
             document.getElementById('appt-form-title').textContent = 'Marcar Nova Sessão';
@@ -1741,6 +1858,7 @@
             document.getElementById('sn-date').value = appt.date || getTodayIso();
             document.getElementById('sn-price').value = appt.price ?? 0;
             document.getElementById('sn-paid').checked = Boolean(appt.paid);
+            document.getElementById('sn-invoiced').checked = Boolean(appt.invoiced);
             document.getElementById('sn-mark-realized').checked = appt.status !== 'Realizada';
             document.getElementById('sn-activities').value = '';
             document.getElementById('sn-content').value = '';
@@ -1822,6 +1940,7 @@
                     .map(id => appData.activities.find(a => a.id === id))
                     .filter(Boolean);
                 const linkedAppt = n.appointmentId ? appData.appointments.find(a => a.id === n.appointmentId) : null;
+                const isInvoiced = Boolean(n.invoiced || (linkedAppt && linkedAppt.invoiced));
 
                 return `
                     <div class="bg-white border border-warmborder rounded-xl p-4 shadow-2xs space-y-2.5">
@@ -1832,6 +1951,7 @@
                                     <span class="text-xs text-ink-muted">${escapeHtml(formatDatePt(n.date))}</span>
                                     ${linkedAppt ? `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-desk text-ink border border-warmborder/80">Agenda: ${escapeHtml(linkedAppt.time || '')} • ${escapeHtml(linkedAppt.status)}</span>` : ''}
                                     ${hasPrice ? `<span class="text-xs font-semibold px-2 py-0.5 rounded-full ${n.paid ? 'bg-sage-light text-sage-dark' : 'bg-ochre-light text-[#8A611E]'}">${formatEuro(n.price)} • ${n.paid ? 'Pago' : 'Por pagar'}</span>` : ''}
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${isInvoiced ? 'bg-sage-light text-sage-dark' : 'bg-desk text-ink-muted'}">${isInvoiced ? 'Fatura Emitida' : 'Por emitir'}</span>
                                 </div>
                                 ${n.activities ? `<p class="text-xs text-sage-dark font-medium mt-1">Atividades: ${escapeHtml(n.activities)}</p>` : ''}
                                 ${linkedActs.length > 0 ? `
@@ -1879,6 +1999,7 @@
             document.getElementById('sn-activities').value = n.activities || '';
             document.getElementById('sn-content').value = n.content || '';
             document.getElementById('sn-paid').checked = Boolean(n.paid);
+            document.getElementById('sn-invoiced').checked = Boolean(n.invoiced);
             document.getElementById('sn-mark-realized').checked = false;
 
             const existingIds = Array.isArray(n.activityIds)
@@ -1904,6 +2025,7 @@
             document.getElementById('sn-activities').value = '';
             document.getElementById('sn-content').value = '';
             document.getElementById('sn-paid').checked = false;
+            document.getElementById('sn-invoiced').checked = false;
             document.getElementById('sn-mark-realized').checked = true;
             clearLinkedActivity();
             applyClientDefaultPrice(document.getElementById('sn-client').value, 'sn-price');
@@ -2033,8 +2155,24 @@
         }
 
         // =========================================================================
-        // 5. CONTROLO FINANCEIRO (INTERLIGADO ÀS SESSÕES E VALORES)
+        // 5. CONTROLO FINANCEIRO (POR MÊS E POR UTENTE + FATURA MENSAL)
         // =========================================================================
+        function setFinanceViewMode(mode) {
+            financeViewMode = mode;
+            const groupedBtn = document.getElementById('fin-view-grouped-btn');
+            const detailedBtn = document.getElementById('fin-view-detailed-btn');
+            if (groupedBtn && detailedBtn) {
+                if (mode === 'grouped') {
+                    groupedBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-sage-dark shadow-2xs transition-colors';
+                    detailedBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-medium text-ink-muted hover:text-ink transition-colors';
+                } else {
+                    detailedBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-sage-dark shadow-2xs transition-colors';
+                    groupedBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-medium text-ink-muted hover:text-ink transition-colors';
+                }
+            }
+            renderFinance();
+        }
+
         function getFinancialEntries() {
             const entries = [];
             const linkedAppointmentIds = new Set(
@@ -2044,15 +2182,19 @@
             appData.appointments.forEach(a => {
                 const client = appData.clients.find(c => c.id === a.clientId);
                 const hasNote = linkedAppointmentIds.has(a.id);
+                const matchingNote = appData.notes.find(n => n.appointmentId === a.id);
+                const invoicedVal = Boolean(a.invoiced || (matchingNote && matchingNote.invoiced));
                 entries.push({
                     sourceType: 'appointment',
                     sourceId: a.id,
                     clientId: a.clientId || '',
                     clientName: client ? client.name : 'Utente',
                     date: a.date || '',
+                    monthKey: getMonthKeyFromDate(a.date),
                     detail: `${a.time || ''} • ${a.context || 'Sessão'} (${a.status})${hasNote ? ' • Com registo' : ''}`,
                     price: parseFloat(a.price) || 0,
-                    paid: Boolean(a.paid)
+                    paid: Boolean(a.paid),
+                    invoiced: invoicedVal
                 });
             });
 
@@ -2061,7 +2203,7 @@
                     return;
                 }
                 const p = parseFloat(n.price) || 0;
-                if (p > 0 || n.paid) {
+                if (p > 0 || n.paid || n.invoiced) {
                     const client = appData.clients.find(c => c.id === n.clientId);
                     entries.push({
                         sourceType: 'note',
@@ -2069,9 +2211,11 @@
                         clientId: n.clientId || '',
                         clientName: client ? client.name : 'Utente',
                         date: n.date || '',
+                        monthKey: getMonthKeyFromDate(n.date),
                         detail: n.activities ? `Registo: ${n.activities}` : 'Registo de sessão',
                         price: p,
-                        paid: Boolean(n.paid)
+                        paid: Boolean(n.paid),
+                        invoiced: Boolean(n.invoiced)
                     });
                 }
             });
@@ -2079,25 +2223,143 @@
             return entries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
         }
 
+        function setEntryInvoicedState(sourceType, sourceId, nextVal) {
+            if (sourceType === 'appointment') {
+                const appt = appData.appointments.find(a => a.id === sourceId);
+                if (appt) {
+                    appt.invoiced = nextVal;
+                    appData.notes.forEach(n => {
+                        if (n.appointmentId === sourceId) {
+                            n.invoiced = nextVal;
+                        }
+                    });
+                }
+            } else if (sourceType === 'note') {
+                const note = appData.notes.find(n => n.id === sourceId);
+                if (note) {
+                    note.invoiced = nextVal;
+                    if (note.appointmentId) {
+                        const appt = appData.appointments.find(a => a.id === note.appointmentId);
+                        if (appt) appt.invoiced = nextVal;
+                    }
+                }
+            }
+        }
+
+        function setEntryPaidState(sourceType, sourceId, nextVal) {
+            if (sourceType === 'appointment') {
+                const appt = appData.appointments.find(a => a.id === sourceId);
+                if (appt) {
+                    appt.paid = nextVal;
+                    appData.notes.forEach(n => {
+                        if (n.appointmentId === sourceId) {
+                            n.paid = nextVal;
+                        }
+                    });
+                }
+            } else if (sourceType === 'note') {
+                const note = appData.notes.find(n => n.id === sourceId);
+                if (note) {
+                    note.paid = nextVal;
+                    if (note.appointmentId) {
+                        const appt = appData.appointments.find(a => a.id === note.appointmentId);
+                        if (appt) appt.paid = nextVal;
+                    }
+                }
+            }
+        }
+
+        function issueMonthlyInvoiceForClient(monthKey, clientId, markAsPaidToo = false) {
+            if (!monthKey || monthKey === 'all' || !clientId) return;
+            const entries = getFinancialEntries().filter(
+                e => e.monthKey === monthKey && e.clientId === clientId
+            );
+            if (entries.length === 0) {
+                showToast('Sem sessões deste utente no mês selecionado.');
+                return;
+            }
+
+            entries.forEach(e => {
+                setEntryInvoicedState(e.sourceType, e.sourceId, true);
+                if (markAsPaidToo) {
+                    setEntryPaidState(e.sourceType, e.sourceId, true);
+                }
+            });
+
+            saveData();
+            renderAppointments();
+            renderNotes();
+            renderFinance();
+            showToast(
+                markAsPaidToo
+                    ? `Fatura mensal emitida e ${entries.length} sessões marcadas como pagas`
+                    : `Fatura mensal emitida para ${entries.length} ${entries.length === 1 ? 'sessão' : 'sessões'}`
+            );
+        }
+
+        function revertMonthlyInvoiceForClient(monthKey, clientId) {
+            if (!monthKey || monthKey === 'all' || !clientId) return;
+            const entries = getFinancialEntries().filter(
+                e => e.monthKey === monthKey && e.clientId === clientId
+            );
+            entries.forEach(e => {
+                setEntryInvoicedState(e.sourceType, e.sourceId, false);
+            });
+            saveData();
+            renderAppointments();
+            renderNotes();
+            renderFinance();
+            showToast('Fatura mensal reposta para Por Emitir');
+        }
+
+        function filterFinanceByMonthAndClient(monthKey, clientId) {
+            const monthSelect = document.getElementById('fin-month-select');
+            const clientSelect = document.getElementById('fin-client-select');
+            const searchInput = document.getElementById('fin-client-search');
+            if (monthSelect && monthKey) monthSelect.value = monthKey;
+            if (clientSelect) clientSelect.value = clientId || '';
+            if (searchInput) searchInput.value = '';
+            setFinanceViewMode('detailed');
+        }
+
         function renderFinance() {
-            const list = document.getElementById('fin-list');
+            const groupedList = document.getElementById('fin-grouped-list');
+            const detailedList = document.getElementById('fin-list');
+            const selectedMonth = document.getElementById('fin-month-select')?.value || 'all';
             const filterVal = document.getElementById('fin-filter')?.value || 'all';
+            const invoiceFilterVal = document.getElementById('fin-invoice-filter')?.value || 'all';
             const selectedClientId = document.getElementById('fin-client-select')?.value || '';
             const searchQuery = (document.getElementById('fin-client-search')?.value || '').trim().toLowerCase();
             const allEntries = getFinancialEntries();
+
+            const monthBadge = document.getElementById('fin-selected-month-badge');
+            if (monthBadge) {
+                monthBadge.textContent = formatMonthLabelPt(selectedMonth);
+            }
+
+            const monthEntries = selectedMonth === 'all'
+                ? allEntries
+                : allEntries.filter(e => e.monthKey === selectedMonth);
 
             let paidTotal = 0;
             let pendingTotal = 0;
             let paidCount = 0;
             let pendingCount = 0;
+            let invoicedCount = 0;
+            let uninvoicedCount = 0;
 
-            allEntries.forEach(e => {
+            monthEntries.forEach(e => {
                 if (e.paid) {
                     paidTotal += e.price;
                     paidCount++;
                 } else {
                     pendingTotal += e.price;
                     pendingCount++;
+                }
+                if (e.invoiced) {
+                    invoicedCount++;
+                } else {
+                    uninvoicedCount++;
                 }
             });
 
@@ -2106,33 +2368,54 @@
             document.getElementById('fin-pending-total').textContent = formatEuro(pendingTotal);
             document.getElementById('fin-pending-count').textContent = `${pendingCount} ${pendingCount === 1 ? 'sessão pendente' : 'sessões pendentes'}`;
             document.getElementById('fin-all-total').textContent = formatEuro(paidTotal + pendingTotal);
+            const invSummaryEl = document.getElementById('fin-invoice-summary');
+            if (invSummaryEl) {
+                invSummaryEl.textContent = `${invoicedCount} ${invoicedCount === 1 ? 'fatura emitida' : 'faturas emitidas'} • ${uninvoicedCount} por emitir`;
+            }
 
             const hasClientFilter = Boolean(selectedClientId || searchQuery);
-            const clientMatchedEntries = allEntries.filter(e => {
+            const clientMatchedEntries = monthEntries.filter(e => {
                 if (selectedClientId && e.clientId !== selectedClientId) return false;
                 if (searchQuery && !e.clientName.toLowerCase().includes(searchQuery)) return false;
                 return true;
             });
 
             const summaryBox = document.getElementById('fin-client-summary');
+            const monthlyActionsBox = document.getElementById('fin-monthly-invoice-actions');
             if (summaryBox) {
                 if (hasClientFilter) {
                     let cPaid = 0;
                     let cPending = 0;
+                    let cUninvoiced = 0;
                     clientMatchedEntries.forEach(item => {
                         if (item.paid) cPaid += item.price;
                         else cPending += item.price;
+                        if (!item.invoiced) cUninvoiced++;
                     });
 
                     const selectedClientObj = selectedClientId ? appData.clients.find(c => c.id === selectedClientId) : null;
+                    const periodSuffix = selectedMonth !== 'all' ? ` (${formatMonthLabelPt(selectedMonth)})` : '';
                     const labelText = selectedClientObj
-                        ? `Utente: ${selectedClientObj.name}`
-                        : `Pesquisa por utente: "${searchQuery}"`;
+                        ? `Utente: ${selectedClientObj.name}${periodSuffix}`
+                        : `Pesquisa: "${searchQuery}"${periodSuffix}`;
 
                     document.getElementById('fin-client-summary-label').textContent = labelText;
                     document.getElementById('fin-client-sessions').textContent = `${clientMatchedEntries.length} ${clientMatchedEntries.length === 1 ? 'sessão' : 'sessões'}`;
                     document.getElementById('fin-client-paid').textContent = `Pago: ${formatEuro(cPaid)}`;
                     document.getElementById('fin-client-pending').textContent = `Por pagar: ${formatEuro(cPending)}`;
+
+                    if (monthlyActionsBox) {
+                        if (selectedClientId && selectedMonth !== 'all' && clientMatchedEntries.length > 0) {
+                            monthlyActionsBox.innerHTML = cUninvoiced > 0
+                                ? `<button type="button" onclick="issueMonthlyInvoiceForClient('${escapeHtml(selectedMonth)}', '${escapeHtml(selectedClientId)}', false)" class="px-3 py-1.5 rounded-xl bg-sage text-white hover:bg-sage-dark text-xs font-semibold transition-colors shadow-2xs">Emitir Fatura Mensal (${clientMatchedEntries.length})</button>`
+                                : `<span class="px-2.5 py-1 rounded-lg bg-sage-light text-sage-dark text-xs font-semibold">Fatura Mensal Emitida</span>`;
+                        } else if (selectedClientId && selectedMonth === 'all') {
+                            monthlyActionsBox.innerHTML = `<span class="text-[11px] text-ink-muted">Selecione um mês para emitir fatura mensal conjunta.</span>`;
+                        } else {
+                            monthlyActionsBox.innerHTML = '';
+                        }
+                    }
+
                     summaryBox.classList.remove('hidden');
                 } else {
                     summaryBox.classList.add('hidden');
@@ -2140,17 +2423,110 @@
             }
 
             const visibleEntries = clientMatchedEntries.filter(e => {
-                if (filterVal === 'paid') return e.paid;
-                if (filterVal === 'unpaid') return !e.paid;
+                if (filterVal === 'paid' && !e.paid) return false;
+                if (filterVal === 'unpaid' && e.paid) return false;
+                if (invoiceFilterVal === 'invoiced' && !e.invoiced) return false;
+                if (invoiceFilterVal === 'uninvoiced' && e.invoiced) return false;
                 return true;
             });
 
+            if (financeViewMode === 'grouped') {
+                groupedList.classList.remove('hidden');
+                detailedList.classList.add('hidden');
+            } else {
+                groupedList.classList.add('hidden');
+                detailedList.classList.remove('hidden');
+            }
+
             if (visibleEntries.length === 0) {
-                list.innerHTML = `<p class="text-xs text-ink-muted text-center py-8 bg-white/70 rounded-xl border border-dashed border-warmborder">Sem movimentos financeiros correspondentes ao filtro.</p>`;
+                const emptyMsg = `<p class="text-xs text-ink-muted text-center py-8 bg-white/70 rounded-xl border border-dashed border-warmborder">Sem movimentos financeiros correspondentes ao filtro.</p>`;
+                groupedList.innerHTML = emptyMsg;
+                detailedList.innerHTML = emptyMsg;
                 return;
             }
 
-            list.innerHTML = visibleEntries.map(e => `
+            // 1. Renderizar Vista Agrupada por Mês e Utente
+            const groupsMap = new Map();
+            visibleEntries.forEach(e => {
+                const mKey = e.monthKey || 'sem-data';
+                const cKey = e.clientId || ('nome:' + e.clientName);
+                const groupKey = `${mKey}__${cKey}`;
+                if (!groupsMap.has(groupKey)) {
+                    groupsMap.set(groupKey, {
+                        monthKey: mKey,
+                        clientId: e.clientId,
+                        clientName: e.clientName,
+                        items: [],
+                        totalPrice: 0,
+                        paidPrice: 0,
+                        pendingPrice: 0,
+                        invoicedCount: 0
+                    });
+                }
+                const g = groupsMap.get(groupKey);
+                g.items.push(e);
+                g.totalPrice += e.price;
+                if (e.paid) g.paidPrice += e.price;
+                else g.pendingPrice += e.price;
+                if (e.invoiced) g.invoicedCount++;
+            });
+
+            const groups = [...groupsMap.values()].sort((a, b) => {
+                const cmpMonth = (b.monthKey || '').localeCompare(a.monthKey || '');
+                if (cmpMonth !== 0) return cmpMonth;
+                return a.clientName.localeCompare(b.clientName);
+            });
+
+            groupedList.innerHTML = groups.map(g => {
+                const allInvoiced = g.invoicedCount === g.items.length;
+                const partialInvoiced = g.invoicedCount > 0 && !allInvoiced;
+                const canBulkInvoice = Boolean(g.clientId && g.monthKey && g.monthKey !== 'sem-data');
+                const datesPreview = g.items
+                    .map(it => formatDatePt(it.date).slice(0, 5))
+                    .reverse()
+                    .join(', ');
+
+                return `
+                    <div class="bg-white border border-warmborder rounded-xl p-4 shadow-2xs space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-desk text-ink">${escapeHtml(formatMonthLabelPt(g.monthKey))}</span>
+                                    <h3 class="font-serif font-semibold text-ink text-base">${escapeHtml(g.clientName)}</h3>
+                                    <span class="text-xs font-medium text-ink-muted">(${g.items.length} ${g.items.length === 1 ? 'sessão' : 'sessões'}: ${escapeHtml(datesPreview)})</span>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2 mt-1.5 text-xs">
+                                    <span class="font-bold text-ink">Total: ${formatEuro(g.totalPrice)}</span>
+                                    <span class="px-2 py-0.5 rounded-md bg-sage-light text-sage-dark font-semibold">Pago: ${formatEuro(g.paidPrice)}</span>
+                                    ${g.pendingPrice > 0 ? `<span class="px-2 py-0.5 rounded-md bg-terracotta-light text-terracotta-dark font-semibold">Por pagar: ${formatEuro(g.pendingPrice)}</span>` : ''}
+                                    <span class="px-2 py-0.5 rounded-md font-semibold ${allInvoiced ? 'bg-sage-light text-sage-dark' : (partialInvoiced ? 'bg-ochre-light text-[#8A611E]' : 'bg-ochre-light text-[#8A611E]')}">
+                                        ${allInvoiced ? 'Fatura Mensal Emitida' : (partialInvoiced ? `Faturadas ${g.invoicedCount}/${g.items.length}` : 'Fatura Por Emitir')}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                                ${canBulkInvoice && !allInvoiced ? `
+                                    <button type="button" onclick="issueMonthlyInvoiceForClient('${escapeHtml(g.monthKey)}', '${escapeHtml(g.clientId)}', false)" class="px-3 py-1.5 rounded-lg bg-sage text-white hover:bg-sage-dark text-xs font-semibold transition-colors shadow-2xs">
+                                        Emitir Fatura Mensal
+                                    </button>
+                                ` : ''}
+                                ${canBulkInvoice && allInvoiced ? `
+                                    <button type="button" onclick="revertMonthlyInvoiceForClient('${escapeHtml(g.monthKey)}', '${escapeHtml(g.clientId)}')" class="px-2.5 py-1.5 rounded-lg bg-desk hover:bg-ochre-light text-ink-muted hover:text-[#8A611E] text-xs font-medium transition-colors" title="Repor estado de faturação deste mês">
+                                        Anular Fatura
+                                    </button>
+                                ` : ''}
+                                <button type="button" onclick="filterFinanceByMonthAndClient('${escapeHtml(g.monthKey)}', '${escapeHtml(g.clientId)}')" class="px-2.5 py-1.5 rounded-lg bg-desk hover:bg-sage-light text-ink hover:text-sage-dark text-xs font-semibold transition-colors">
+                                    Ver Sessões
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 2. Renderizar Vista Detalhada
+            detailedList.innerHTML = visibleEntries.map(e => `
                 <div class="bg-white border border-warmborder rounded-xl p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <div class="flex flex-wrap items-center gap-2">
@@ -2160,13 +2536,17 @@
                         <p class="text-xs text-ink-muted mt-0.5">${escapeHtml(e.detail)}</p>
                     </div>
 
-                    <div class="flex items-center justify-between sm:justify-end gap-3">
+                    <div class="flex flex-wrap items-center justify-between sm:justify-end gap-2.5">
                         <span class="font-bold text-sm ${e.paid ? 'text-sage-dark' : 'text-ink'}">${formatEuro(e.price)}</span>
 
                         <label class="flex items-center gap-1.5 text-xs font-semibold cursor-pointer select-none px-2.5 py-1 rounded-lg border ${e.paid ? 'bg-sage-light border-sage/30 text-sage-dark' : 'bg-terracotta-light border-terracotta/30 text-terracotta-dark'}">
                             <input type="checkbox" ${e.paid ? 'checked' : ''} onchange="toggleFinancePaid('${e.sourceType}', '${e.sourceId}')" class="w-3.5 h-3.5 accent-sage rounded">
                             <span>${e.paid ? 'Pago' : 'Por pagar'}</span>
                         </label>
+
+                        <button type="button" onclick="toggleFinanceInvoiced('${e.sourceType}', '${e.sourceId}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${e.invoiced ? 'bg-sage-light border-sage/30 text-sage-dark' : 'bg-ochre-light border-ochre/30 text-[#8A611E]'}" title="Alternar estado da fatura">
+                            ${e.invoiced ? 'Fatura Emitida' : 'Fatura Por Emitir'}
+                        </button>
 
                         <button type="button" onclick="editFinanceSource('${e.sourceType}', '${e.sourceId}')" class="px-2.5 py-1.5 rounded-lg bg-desk hover:bg-sage-light text-ink hover:text-sage-dark text-xs font-semibold flex items-center gap-1 transition-colors" title="Editar valor ou sessão">
                             <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
@@ -2179,25 +2559,40 @@
             refreshIcons();
         }
 
-        function toggleFinancePaid(sourceType, sourceId) {
+        function toggleFinanceInvoiced(sourceType, sourceId) {
             if (sourceType === 'appointment') {
                 const appt = appData.appointments.find(a => a.id === sourceId);
                 if (appt) {
-                    appt.paid = !appt.paid;
-                    appData.notes.forEach(n => {
-                        if (n.appointmentId === sourceId) {
-                            n.paid = appt.paid;
-                        }
-                    });
+                    const matchingNote = appData.notes.find(n => n.appointmentId === sourceId);
+                    const currentVal = Boolean(appt.invoiced || (matchingNote && matchingNote.invoiced));
+                    const nextVal = !currentVal;
+                    setEntryInvoicedState('appointment', sourceId, nextVal);
+                    showToast(nextVal ? 'Marcada como Fatura Emitida' : 'Marcada como Fatura Por Emitir');
                 }
             } else if (sourceType === 'note') {
                 const note = appData.notes.find(n => n.id === sourceId);
                 if (note) {
-                    note.paid = !note.paid;
-                    if (note.appointmentId) {
-                        const appt = appData.appointments.find(a => a.id === note.appointmentId);
-                        if (appt) appt.paid = note.paid;
-                    }
+                    const nextVal = !Boolean(note.invoiced);
+                    setEntryInvoicedState('note', sourceId, nextVal);
+                    showToast(nextVal ? 'Marcada como Fatura Emitida' : 'Marcada como Fatura Por Emitir');
+                }
+            }
+            saveData();
+            renderAppointments();
+            renderNotes();
+            renderFinance();
+        }
+
+        function toggleFinancePaid(sourceType, sourceId) {
+            if (sourceType === 'appointment') {
+                const appt = appData.appointments.find(a => a.id === sourceId);
+                if (appt) {
+                    setEntryPaidState('appointment', sourceId, !appt.paid);
+                }
+            } else if (sourceType === 'note') {
+                const note = appData.notes.find(n => n.id === sourceId);
+                if (note) {
+                    setEntryPaidState('note', sourceId, !note.paid);
                 }
             }
             saveData();
@@ -2241,6 +2636,7 @@
                 const price = parseFloat(document.getElementById('appt-price').value) || 0;
                 const status = document.getElementById('appt-status').value;
                 const paid = document.getElementById('appt-paid').checked;
+                const invoiced = document.getElementById('appt-invoiced').checked;
 
                 if (!clientId) {
                     showToast('Crie primeiro uma ficha de utente.');
@@ -2257,6 +2653,7 @@
                         appt.price = price;
                         appt.status = status;
                         appt.paid = paid;
+                        appt.invoiced = invoiced;
 
                         appData.notes.forEach(n => {
                             if (n.appointmentId === editId) {
@@ -2264,6 +2661,7 @@
                                 n.date = date;
                                 n.price = price;
                                 n.paid = paid;
+                                n.invoiced = invoiced;
                             }
                         });
                     }
@@ -2277,7 +2675,8 @@
                         context,
                         price,
                         status,
-                        paid
+                        paid,
+                        invoiced
                     });
                     showToast('Sessão marcada na agenda');
                 }
@@ -2353,6 +2752,7 @@
                 const activities = document.getElementById('sn-activities').value.trim();
                 const content = document.getElementById('sn-content').value.trim();
                 const paid = document.getElementById('sn-paid').checked;
+                const invoiced = document.getElementById('sn-invoiced').checked;
                 const markRealized = document.getElementById('sn-mark-realized').checked;
 
                 if (!clientId) {
@@ -2373,6 +2773,7 @@
                         n.activityId = linkedActivityIds[0] || null;
                         n.content = content;
                         n.paid = paid;
+                        n.invoiced = invoiced;
                     }
                     showToast('Registo de sessão atualizado');
                 } else {
@@ -2386,7 +2787,8 @@
                         activityIds: [...linkedActivityIds],
                         activityId: linkedActivityIds[0] || null,
                         content,
-                        paid
+                        paid,
+                        invoiced
                     });
                     showToast('Registo de sessão guardado');
                 }
@@ -2395,6 +2797,7 @@
                     const linkedAppt = appData.appointments.find(a => a.id === appointmentId);
                     if (linkedAppt) {
                         linkedAppt.paid = paid;
+                        linkedAppt.invoiced = invoiced;
                         linkedAppt.price = price;
                         if (markRealized) {
                             linkedAppt.status = 'Realizada';
@@ -2459,7 +2862,7 @@
                     resetClientForm();
                     resetNoteForm();
                     resetActivityForm();
-                    clearFinanceClientFilter();
+                    clearFinanceFilters();
                     renderAll();
                     refreshIcons();
                     showToast('Base de dados limpa');
